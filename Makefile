@@ -23,6 +23,7 @@ ifeq ($(BOARD), alpha)
 	FLOAT-ABI = -mfloat-abi=hard
 	MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 	C_DEFS += -DSTM32U5A5xx
+	C_DEFS += --DHW_VERSION=0
 endif
 
 ifeq ($(BOARD), beta)
@@ -31,6 +32,7 @@ ifeq ($(BOARD), beta)
 	FLOAT-ABI = -mfloat-abi=hard
 	MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 	C_DEFS += -DSTM32U595xx
+	C_DEFS += -DHW_VERSION=1
 endif
 
 C_DEFS +=  \
@@ -142,8 +144,12 @@ lint:
 	docker run \
 		-e RUN_LOCAL=true \
 		-e VALIDATE_CPP=false \
-		-e VALIDATE_DOCKERFILE_HADOLINT=false \
-		-v $(shell pwd):/tmp/lint \
+		-e FIX_CLANG_FORMAT=true \
+		-e DEFAULT_BRANCH=main \
+		-v $(shell pwd)/.git:/tmp/lint/.git \
+		-v $(shell pwd)/.github:/tmp/lint/.github \
+		-v $(shell pwd)/src:/tmp/lint/src \
+		-v $(shell pwd)/test:/tmp/lint/test \
 		--rm ghcr.io/super-linter/super-linter:v7.1.0
 
 $(DOCKER_IMAGE): Dockerfile packages.txt
