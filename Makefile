@@ -143,14 +143,23 @@ build: $(DOCKER_IMAGE)
 lint:
 	docker run \
 		-e RUN_LOCAL=true \
-		-e VALIDATE_CPP=false \
-		-e FIX_CLANG_FORMAT=true \
+		-e VALIDATE_CLANG_FORMAT=true \
+		-e LINTER_RULES_PATH=.github/linters \
 		-e DEFAULT_BRANCH=main \
-		-v $(shell pwd)/.git:/tmp/lint/.git \
-		-v $(shell pwd)/.github:/tmp/lint/.github \
-		-v $(shell pwd)/src:/tmp/lint/src \
-		-v $(shell pwd)/test:/tmp/lint/test \
-		--rm ghcr.io/super-linter/super-linter:v7.1.0
+		-e FILTER_REGEX_EXCLUDE='.*(board|lib)/.*' \
+		-v $(shell pwd)/.:/tmp/lint \
+		--rm ghcr.io/super-linter/super-linter:latest
+
+lint_fix:
+	docker run \
+		-e RUN_LOCAL=true \
+		-e VALIDATE_CLANG_FORMAT=true \
+		-e FIX_CLANG_FORMAT=true \
+		-e LINTER_RULES_PATH=.github/linters \
+		-e DEFAULT_BRANCH=main \
+		-e FILTER_REGEX_EXCLUDE='.*(board|lib)/.*' \
+		-v $(shell pwd)/.:/tmp/lint \
+		--rm ghcr.io/super-linter/super-linter:latest
 
 $(DOCKER_IMAGE): Dockerfile packages.txt
 	$(call print0, Building docker image)

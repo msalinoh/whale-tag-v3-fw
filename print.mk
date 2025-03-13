@@ -1,3 +1,4 @@
+# Description this file contains helper definitions for printing within make 
 PRINT := printf
 
 ### Functions ###
