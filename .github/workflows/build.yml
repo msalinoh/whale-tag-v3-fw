@@ -46,7 +46,6 @@ jobs:
 
         - name: Compile Debug
           run: |
-            ls -R
             make DEBUG=1
 
     # Set the job key. The key is displayed as the job name
@@ -71,5 +70,4 @@ jobs:
 
         - name: Compile Release
           run: |
-            ls -R
             make DEBUG=0

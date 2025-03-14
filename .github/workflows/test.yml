@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-          
+
       # update submodules
       - name: Git Submodule Update
         run: |
@@ -36,7 +36,6 @@ jobs:
       # Runs the Super-Linter action
       - name: Compile 
         run: |
-          ls -R
           make test
 
           
