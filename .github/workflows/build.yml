@@ -37,9 +37,9 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-        -name: Compile Debug
-        run: |
-          make
+        - name: Compile Debug
+          run: |
+            make DEBUG=1
 
     # Set the job key. The key is displayed as the job name
   # when a job name is not provided
@@ -50,6 +50,6 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-        -name: Compile Release
-        run: |
-          make DEBUG=0
+        - name: Compile Release
+          run: |
+            make DEBUG=0
