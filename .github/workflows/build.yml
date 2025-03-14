@@ -23,6 +23,17 @@ jobs:
           dos2unix packages.txt
           sudo apt-get install -y $(cat packages.txt)
 
+      # update submodules
+      - name: Git Submodule Update
+        run: |
+          git submodule update --init --recursive
+
+      - name: Upload Repository as Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: repository
+          path: 
+
 
   # Set the job key. The key is displayed as the job name
   # when a job name is not provided
@@ -34,19 +45,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
         # Checks out a copy of your repository on the ubuntu-latest machine
-        - name: Checkout Code
-          uses: actions/checkout@v4
-          with:
-            submodules: true
+      - name: Download Repository Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: repository
 
-        # update submodules
-        - name: Git Submodule Update
-          run: |
-            git submodule update --init --recursive
-
-        - name: Compile Debug
-          run: |
-            make DEBUG=1
+      - name: Compile Debug
+        run: |
+          make DEBUG=1
 
     # Set the job key. The key is displayed as the job name
   # when a job name is not provided
@@ -57,17 +63,12 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-        # Checks out a copy of your repository on the ubuntu-latest machine
-        - name: Checkout Code
-          uses: actions/checkout@v4
-          with:
-            submodules: true
+      # Checks out a copy of your repository on the ubuntu-latest machine
+      - name: Download Repository Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: repository
 
-        # update submodules
-        - name: Git Submodule Update
-          run: |
-            git submodule update --init --recursive
-
-        - name: Compile Release
-          run: |
-            make DEBUG=0
+      - name: Compile Release
+        run: |
+          make DEBUG=0
