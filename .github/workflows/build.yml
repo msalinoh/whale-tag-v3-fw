@@ -37,7 +37,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-        name: Compile Debug
+        -name: Compile Debug
         run: |
           make
 
@@ -50,6 +50,6 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
-        name: Compile Release
+        -name: Compile Release
         run: |
           make DEBUG=0
