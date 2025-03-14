@@ -35,4 +35,5 @@ jobs:
       # Runs the Super-Linter action
       - name: Compile 
         run: |
+          ls -R
           make test
