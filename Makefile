@@ -161,6 +161,8 @@ lint_fix:
 		-v $(shell pwd)/.:/tmp/lint \
 		--rm ghcr.io/super-linter/super-linter:latest
 
+include Test.mk
+
 $(DOCKER_IMAGE): Dockerfile packages.txt
 	$(call print0, Building docker image)
 	docker build -t $(DOCKER_IMAGE) .

@@ -5,11 +5,8 @@ name: Build
 on: push
 
 jobs:
-  # Set the job key. The key is displayed as the job name
-  # when a job name is not provided
-  test:
-    # Name the Job
-    name: Build
+  setup:
+    name: Setup
     # Set the type of machine to run on
     runs-on: ubuntu-latest
     steps:
@@ -24,14 +21,35 @@ jobs:
           sudo apt-get update
           sudo apt-get install dos2unix
           dos2unix packages.txt
-          sudo apt-get install -y flac $(cat packages.txt)
+          sudo apt-get install -y $(cat packages.txt)
 
       # update submodules
       - name: Git Submodule Update
         run: |
           git submodule update --init --recursive
 
-      # Runs the Super-Linter action
-      - name: Compile 
+  # Set the job key. The key is displayed as the job name
+  # when a job name is not provided
+  build_debug:
+    # Name the Job
+    name: Build Debug
+    # Set the type of machine to run on
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+        name: Compile Debug
         run: |
           make
+
+    # Set the job key. The key is displayed as the job name
+  # when a job name is not provided
+  build_release:
+    # Name the Job
+    name: Build Release
+    # Set the type of machine to run on
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+        name: Compile Release
+        run: |
+          make DEBUG=0
