@@ -1,5 +1,5 @@
 ---
-name: Build
+name: Test
 
 # Run this workflow every time a new commit pushed to your repository
 on: push
@@ -7,9 +7,9 @@ on: push
 jobs:
   # Set the job key. The key is displayed as the job name
   # when a job name is not provided
-  test:
+  setup:
     # Name the Job
-    name: Build
+    name: Setup
     # Set the type of machine to run on
     runs-on: ubuntu-latest
     steps:
@@ -27,7 +27,11 @@ jobs:
       - name: Git Submodule Update
         run: |
           git submodule update --init --recursive
-
+  test:
+    name: Test
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
       # Runs the Super-Linter action
       - name: Compile 
         run: |
