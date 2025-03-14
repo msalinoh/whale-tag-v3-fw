@@ -116,9 +116,6 @@ $(BUILD_DIR)/$(TARGET).bin: $(BUILD_DIR)/$(TARGET).elf
 	$(call print1,Creating bin:,$@)
 	@$(CP) -O binary -S $< $@
 
-release: 
-	@$(MAKE) DEBUG=0
-
 flash: $(BUILD_DIR)/$(TARGET).elf
 	$(call print0, Flashing via stlink)
 	STM32_Programmer_CLI --connect port=swd --write $< --go
