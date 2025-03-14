@@ -23,10 +23,6 @@ jobs:
           dos2unix packages.txt
           sudo apt-get install -y $(cat packages.txt)
 
-      # update submodules
-      - name: Git Submodule Update
-        run: |
-          git submodule update --init --recursive
 
   # Set the job key. The key is displayed as the job name
   # when a job name is not provided
@@ -37,6 +33,17 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
+        # Checks out a copy of your repository on the ubuntu-latest machine
+        - name: Checkout Code
+          uses: actions/checkout@v4
+          with:
+            submodules: true
+
+        # update submodules
+        - name: Git Submodule Update
+          run: |
+            git submodule update --init --recursive
+
         - name: Compile Debug
           run: |
             ls -R
@@ -51,6 +58,17 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
+        # Checks out a copy of your repository on the ubuntu-latest machine
+        - name: Checkout Code
+          uses: actions/checkout@v4
+          with:
+            submodules: true
+
+        # update submodules
+        - name: Git Submodule Update
+          run: |
+            git submodule update --init --recursive
+
         - name: Compile Release
           run: |
             ls -R
