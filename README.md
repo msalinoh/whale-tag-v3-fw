@@ -68,6 +68,22 @@ make flash
 ## STM32CubeIDE
 [Instructions](https://hackaday.com/wp-content/uploads/2017/07/tutorial.pdf) for importing a makefile projects into Eclipse (STM32CubeIDE).
 
+Note the makefile is currently setup to build on a linux system, and is not compatible with windows. 
+To get around `make` can be run inside a virtual environment via `wsl make` or running inside docker. 
+
+The produced .elf file can still be debugged inside stm32CubeIDE by importing the makefile project, selecting the .elf file to bug, and disabling autobuild using the following steps:
+- Project-> Properties-> Run/Debug Settings->
+    - New…->
+    - Select ‘STM32 Cortex-M C/C++ Application’
+    - OK
+- Main->
+    - Select ‘Disable auto build’
+    - C/C++ Application: <browse to ELF file you built>
+    - Apply
+    - OK
+    - Apply and Close
+
+
 ## VSCode
 [Instructions](https://stm32world.com/wiki/STM32_development_and_debugging_using_VSCode) for setting up and debugging with VSCode.
 

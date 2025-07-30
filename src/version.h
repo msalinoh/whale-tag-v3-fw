@@ -1,0 +1,4 @@
+#ifndef CETI_WHALE_TAG_VER_H
+#define CETI_WHALE_TAG_VER_H
+#define FW_VERSION_TEXT "1741978968: ea2849a - update readme"
+#endif // CETI_WHALE_TAG_VERSIONING_H

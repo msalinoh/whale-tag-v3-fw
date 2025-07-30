@@ -1,1 +1,12 @@
+#ignore built files
 build/
+
+# MxCube ignore generated files
+board/beta/*/
+board/nucleo/*/
+
+# ignore eclipse files
+.settings/
+.cproject
+.project
+*.launch

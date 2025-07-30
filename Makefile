@@ -1,9 +1,21 @@
-BOARD ?= beta
+BOARD ?= V3_1
 DEBUG ?= 1
 
 BUILD_ROOT = build
 
 TARGET = ceti-whale-tag
+
+ifeq ($(OS),Windows_NT)
+	USER := 1000
+	USER_GROUP := 1000
+#	TEST := $(shell Get-ChildItem -Filter *.c -Recurse $PWD)	
+# 	FIND := <some Windows-compatible find>
+else
+	PWD := $(shell pwd)
+	USER := $(shell id -u)
+	USER_GROUP := $(shell id -g)
+endif
+
 
 ### Tools ###
 RM := rm
@@ -15,18 +27,22 @@ CC := $(CROSS)gcc
 CP := $(CROSS)objcopy
 SZ := $(CROSS)size
 
+### Versioning ###
+GIT_VERSION_INFO = $(shell if !(git log -1 --format="%at: %h - %s"); then echo "unknown"; fi)
+
+
 ### C Compilation settings ###
 # Board specific 
-ifeq ($(BOARD), alpha)
+ifeq ($(BOARD), nucleo)
 	CPU = -mcpu=cortex-m33
 	FPU = -mfpu=fpv4-sp-d16
 	FLOAT-ABI = -mfloat-abi=hard
 	MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 	C_DEFS += -DSTM32U5A5xx
-	C_DEFS += --DHW_VERSION=0
+	C_DEFS += -DHW_VERSION=0
 endif
 
-ifeq ($(BOARD), beta)
+ifeq ($(BOARD), V3_1)
 	CPU = -mcpu=cortex-m33
 	FPU = -mfpu=fpv4-sp-d16
 	FLOAT-ABI = -mfloat-abi=hard
@@ -47,9 +63,13 @@ else
 endif
 
 # Generate dependency information
-C_INCLUDES := $(addprefix -I,$(shell find board/$(BOARD) -type d \( -iname 'inc' -o -iname 'include' -o -iwholename '*/inc/legacy' -o -iname 'app' \) 2> /dev/null))
+C_INCLUDES += $(addprefix -I,$(shell find board/$(BOARD) -type d \( -iname 'inc' -o -iname 'include' -o -iwholename '*/inc/legacy' -o -iname 'app' \) 2> /dev/null))
+C_INCLUDES += -Ilib/tinyusb/src
+C_INCLUDES += -Isrc
+C_INCLUDES += -Iboard/$(BOARD)/FileX/Target
 CFLAGS += $(MCU) $(C_DEFS) $(C_INCLUDES) $(COPT) -Wall -fdata-sections -ffunction-sections
 CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
+CFLAGS += -DCFG_TUSB_CONFIG_FILE="\"usb/tusb_config.h\""
 
 # link script
 LDSCRIPT = $(addprefix -T,$(shell find board/$(BOARD) -type f -iname '*_FLASH.ld'))
@@ -57,18 +77,23 @@ LDSCRIPT = $(addprefix -T,$(shell find board/$(BOARD) -type f -iname '*_FLASH.ld
 # libraries
 LIBS = -lc -lm -lnosys 
 LIBDIR = 
-LDFLAGS = $(MCU) -specs=nano.specs $(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
-
+LDFLAGS = $(MCU) -u _printf_float $(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
+# LDFLAGS += -specs=nano.specs
 
 ### Files and Directories ###
 
 # source files
-C_SRCS = $(shell find board/$(BOARD) src -type f -iname '*.c' 2> /dev/null)
-ASM_SRCS = $(shell find board/$(BOARD) src -type f -iname '*.s' 2> /dev/null)
+SRC_DIR = src
+VERSION_H := $(SRC_DIR)/version.h
 
-# objects files
-C_OBJS = $(addprefix $(BUILD_DIR)/,$(C_SRCS:.c=.c.o))
-ASM_OBJS = $(addprefix $(BUILD_DIR)/,$(ASM_SRCS:.s=.s.o))
+C_SRCS = $(shell find src -type f -iname '*.c' 2> /dev/null)
+C_SRCS += $(shell find board/$(BOARD) -type f -iname '*.c' 2> /dev/null)
+C_SRCS += $(shell find lib/tinyusb/src -type f -iname '*.c' 2> /dev/null) #tinyusb
+
+
+ASM_SRCS = $(shell find board/$(BOARD) src -type f -iname '*.s' 2> /dev/null)
+C_OBJS = $(addprefix $(BUILD_DIR)/,$(patsubst %.c, %.c.o, $(C_SRCS)))
+ASM_OBJS = $(addprefix $(BUILD_DIR)/,$(patsubst %.s, %.s.o, $(ASM_SRCS)))
 ALL_OBJS = $(C_OBJS) $(ASM_OBJS)
 
 # Build folders
@@ -85,7 +110,26 @@ ALL_DIRS := $(BUILD_DIR) $(C_BUILD_DIRS) $(ASM_BUILD_DIRS)
 ### Rules ###
 
 # default target
-all: $(BUILD_DIR)/$(TARGET).bin $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex
+DOCKER_IMAGE = stm32_build_img
+
+all: $(C_SRCS_FILE) $(BUILD_DIR)/$(TARGET).bin $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex
+
+
+build: $(DOCKER_IMAGE)
+	$(call print0, Running make inside docker)
+	docker run --rm \
+		--user $(USER):$(USER_GROUP) \
+		--volume $(PWD):/ceti-firmware \
+		$(DOCKER_IMAGE) \
+			make
+
+# src/__versioning.h
+$(VERSION_H):
+	$(call print2,Updating version info:,$(GIT_VERSION_INFO),$@)
+	@echo "#ifndef CETI_WHALE_TAG_VER_H" > $@
+	@echo "#define CETI_WHALE_TAG_VER_H" >> $@
+	@echo "#define FW_VERSION_TEXT \"$(GIT_VERSION_INFO)\"" >> $@
+	@echo "#endif // CETI_WHALE_TAG_VERSIONING_H" >> $@
 
 # mkdirs
 $(ALL_DIRS):
@@ -102,7 +146,7 @@ $(BUILD_DIR)/%.c.o : %.c | $(C_BUILD_DIRS)
 	$(call print2,Compiling:,$<,$@)
 	@$(CC) -c $(CFLAGS) $< -o $@ 
 
-$(BUILD_DIR)/$(TARGET).elf: $(ALL_OBJS) | $(BUILD_DIR)
+$(BUILD_DIR)/$(TARGET).elf: $(VERSION_H) $(ALL_OBJS) | $(BUILD_DIR)
 	$(call print1,Linking elf:,$@)
 	@$(CC) $^ $(LDFLAGS) -o $@
 	$(SZ) $@
@@ -124,15 +168,7 @@ clean:
 	$(call print0, Cleaning build artifacts)
 	@$(RM) -rf $(BUILD_ROOT)
 
-DOCKER_IMAGE = stm32_build_img
 
-build: $(DOCKER_IMAGE)
-	$(call print0, Running make inside docker)
-	docker run --rm \
-		--user $(shell id -u):$(shell id -g) \
-		--volume $(shell pwd):/ceti-firmware \
-		$(DOCKER_IMAGE) \
-			$(MAKE)
 
 lint:
 	docker run \
@@ -141,7 +177,7 @@ lint:
 		-e LINTER_RULES_PATH=.github/linters \
 		-e DEFAULT_BRANCH=main \
 		-e FILTER_REGEX_EXCLUDE='.*(board|lib)/.*' \
-		-v $(shell pwd)/.:/tmp/lint \
+		-v $(PWD)/.:/tmp/lint \
 		--rm ghcr.io/super-linter/super-linter:latest
 
 lint_fix:
@@ -152,7 +188,7 @@ lint_fix:
 		-e LINTER_RULES_PATH=.github/linters \
 		-e DEFAULT_BRANCH=main \
 		-e FILTER_REGEX_EXCLUDE='.*(board|lib)/.*' \
-		-v $(shell pwd)/.:/tmp/lint \
+		-v $(PWD)/.:/tmp/lint \
 		--rm ghcr.io/super-linter/super-linter:latest
 
 include Test.mk
@@ -168,4 +204,5 @@ $(DOCKER_IMAGE): Dockerfile packages.txt
 	clean \
 	flash \
 	build \
-	$(DOCKER_IMAGE)
+	$(DOCKER_IMAGE) \
+	$(VERSION_H) 
