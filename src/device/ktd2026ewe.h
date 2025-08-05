@@ -23,6 +23,7 @@ typedef enum {
 /***  Function Declarations  *************************************************/
 HAL_StatusTypeDef ktd2026ewe_reset(void);
 HAL_StatusTypeDef ktd2026ewe_set_led_mode(uint8_t led_index, ktd2026ewe_LedMode mode);
+HAL_StatusTypeDef ktd2026ewe_set_modes(ktd2026ewe_LedMode mode0, ktd2026ewe_LedMode mode1, ktd2026ewe_LedMode mode2);
 HAL_StatusTypeDef ktd2026ewe_set_led_current(uint8_t led_index, float current_mA);
 HAL_StatusTypeDef ktd2026ewe_set_period_s(float period_s);
 HAL_StatusTypeDef ktd2026ewe_set_pwm1_duty(float duty);

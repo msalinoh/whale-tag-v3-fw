@@ -22,6 +22,7 @@
 
 /* Local Includes */
 #include "acq/acq_ecg.h"
+#include "acq/acq_pressure.h"
 #include "log/log_audio.h"
 #include "led.h"
 #include "mission.h"
@@ -64,20 +65,26 @@ static void SystemPower_Config(void)
 /* USER CODE END PWR */
 }
 
-extern I2C_HandleTypeDef hi2c1;
-extern I2C_HandleTypeDef hi2c2;
-
 int cmd_bms_verify(void);
 int cmd_bms_program_nonvolatile_memory(void);
 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
+{
+	switch(GPIO_Pin) {
+		case KELLER_DRDY_EXTI9_Pin: // 9
+			acq_pressure_EXTI_cb();
+			break;
+		default:
+			__NOP();
+			break;
+	}
+}
+
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 {
 	switch(GPIO_Pin) {
 		case ECG_ADC_NDRDY_GPIO_Input_Pin: // 2
 			acq_ecg_EXTI_Callback();
-			break;
-		case KELLER_DRDY_GPIO_Input_Pin: // 9
-			// ToDo: implement keller data ready interrupt
 			break;
 		case IMU_NINT_GPIO_Input_Pin: //10
 			// ToDo: implement IMU data ready interrupt
@@ -95,117 +102,122 @@ int main(void) {
 
     /* Initialize all configured peripherals */
     MX_GPIO_Init();
-    HAL_NVIC_DisableIRQ(EXTI2_IRQn);
     MX_GPDMA1_Init();
     MX_ICACHE_Init();
-    MX_SDMMC1_SD_Init();
-    MX_FileX_Init();
-    MX_RTC_Init();
 
-    MX_I2C3_Init(); // BMS
+    MX_RTC_Init();
+    
+    MX_I2C1_Init(); // pressure sensor
+    MX_I2C3_Init(); // BMS / LEDs
+    
     led_init();
     led_idle();
-
+        
     /* open SD card for system logging */
-	int filex_status = fx_media_open(&sdio_disk, "", fx_stm32_sd_driver, (VOID *)FX_NULL, (VOID *) fx_sd_media_memory, sizeof(fx_sd_media_memory));
-	if(filex_status == FX_SUCCESS) {
-	    syslog_init();
-	    CETI_LOG("Program started!");
-	}
-
+    MX_SDMMC1_SD_Init();
+    MX_FileX_Init();
+        int filex_status = fx_media_open(&sdio_disk, "", fx_stm32_sd_driver, (VOID *)FX_NULL, (VOID *) fx_sd_media_memory, sizeof(fx_sd_media_memory));
+        if(filex_status == FX_SUCCESS) {
+        syslog_init();
+        CETI_LOG("Program started!");
+    }
+    
     
     /* Detect if the external interface is present to enable USB for offload/debug/DFU */
     if (usb_iface_present()) {
-    	CETI_LOG("Key detected. Starting USB Device Interface");
-
-    	/* initialize USB hardware */
+        CETI_LOG("Key detected. Starting USB Device Interface");
+      
+        /* initialize USB hardware */
         // ToDo: reconfigure gpio for USB here leave USB gpio as high impedence analog in normal config
         __HAL_RCC_SYSCFG_CLK_ENABLE();
         MX_USB_OTG_HS_PCD_Init(); // setup HS USB Hardware
-
-
-        SysTick_Config(SystemCoreClock / 1000);
-
+        
+        
         // IOSV bit MUST be set to access GPIO port G[2:15] */
         HAL_PWREx_EnableVddIO2();
-
+        
         /* USB clock enable */
-	  __HAL_RCC_USB_OTG_HS_CLK_ENABLE();
-	  __HAL_RCC_USBPHYC_CLK_ENABLE();
-
-	  /* Enable USB power on Pwrctrl CR2 register */
-	  HAL_PWREx_EnableVddUSB();
-	  HAL_PWREx_EnableUSBHSTranceiverSupply();
-
-	  /*Configuring the SYSCFG registers OTG_HS PHY*/
-	  HAL_SYSCFG_EnableOTGPHY(SYSCFG_OTG_HS_PHY_ENABLE);
-
-	  // Disable VBUS sense (B device)
-	  USB_OTG_HS->GCCFG &= ~USB_OTG_GCCFG_VBDEN;
-
-	  // B-peripheral session valid override enable
-	  USB_OTG_HS->GCCFG |= USB_OTG_GCCFG_VBVALEXTOEN;
-	  USB_OTG_HS->GCCFG |= USB_OTG_GCCFG_VBVALOVAL;
-
+        __HAL_RCC_USB_OTG_HS_CLK_ENABLE();
+        __HAL_RCC_USBPHYC_CLK_ENABLE();
+        
+        /* Enable USB power on Pwrctrl CR2 register */
+        HAL_PWREx_EnableVddUSB();
+        HAL_PWREx_EnableUSBHSTranceiverSupply();
+        
+        /*Configuring the SYSCFG registers OTG_HS PHY*/
+        HAL_SYSCFG_EnableOTGPHY(SYSCFG_OTG_HS_PHY_ENABLE);
+        
+        // Disable VBUS sense (B device)
+        USB_OTG_HS->GCCFG &= ~USB_OTG_GCCFG_VBDEN;
+        
+        // B-peripheral session valid override enable
+        USB_OTG_HS->GCCFG |= USB_OTG_GCCFG_VBVALEXTOEN;
+        USB_OTG_HS->GCCFG |= USB_OTG_GCCFG_VBVALOVAL;
+        HAL_Delay(100);
         usb_init(); // initialize tiny usb library
-
+        
         /* main loop while in USB */
         while (usb_iface_present()) {
             // ToDo: update leds for usb
             tud_task(); // usb device task
             if (tud_mounted()){
-            	CETI_LOG("usb IS mounted");
+              CETI_LOG("usb IS mounted");
             }
             // ToDo: react to incoming CDC requests
             // ToDo: sleep?
         }
-
+        
         /* reboot system to return to capture state once key is removed */
         NVIC_SystemReset();
     }
-
+      
     /* perform runtime system hardware test to detect available systems */
     CETI_LOG("Initializing BMS");
 
 
+    CETI_LOG("Enabling VHF Pinger");
+
+
+      
     /* enable Audio -5V */
     CETI_LOG("Initializing Audio");
     log_audio_enable();
     led_heartbeat();
-    // MX_SPI3_Init();
+    
+    CETI_LOG("Initializing Pressure");
+    // GPS pulls entire bus low if not powered
+    HAL_GPIO_WritePin(GPS_PWR_EN_GPIO_Output_GPIO_Port, GPS_PWR_EN_GPIO_Output_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPS_NRST_GPIO_Output_GPIO_Port, GPS_NRST_GPIO_Output_Pin, GPIO_PIN_SET);
+    acq_pressure_enable();
+
+    CETI_LOG("Initializing IMU");
+
+    CETI_LOG("Initializing ECG");
+    MX_I2C2_Init(); // ECG ADC
+    acq_ecg_enable();
+
+    CETI_LOG("Initializing GPS");
+
+    CETI_LOG("Initializing ARGOS");
+
+    CETI_LOG("Enabling Antenna Flasher");
+
+
 
     mission_set_state(MISSION_STATE_SURFACE);
     while(1){
-    	// update mission state machine
         mission_task();
-		//  HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
-		//  // HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
-
-		//  HAL_Delay(500);
-        //  float cell_temp[2] = {};
-        //  for ( int i = 0; i < 2; i++) {
-        //      int status = max17320_get_cell_temperature_c(i, &cell_temp[i]);
-        //      if( status != 0) {
-        //          HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
-        //      } else {
-		//  		HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
-        //      }
-        //  }
-        //  CETI_LOG("Battery_temp: [%0.2f, %0.2f]", cell_temp[0], cell_temp[1]);
-		 // if(HAL_I2C_Master_Transmit(&hi2c2, 0x0b << 1, NULL, 0, 100) == HAL_OK) {
-		 // 	HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
-		 // }
-
-
-		 // if(HAL_I2C_Master_Transmit(&hi2c2, 0x36 << 1, NULL, 0, 100) == HAL_OK) {
-		 // 	HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_SET);
-		 // }
-
-		 // if(HAL_I2C_Master_Transmit(&hi2c2, 0x40 << 1, request, 1, 100) == HAL_OK) {
-		 // 	HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
-		 // }
-
-		// HAL_Delay(500);
+    	/* List of possible tasks */
+        // log_audio_task();
+    	// Flush Audio Buffer
+    	// Empty
+    	// Flush Battery
+    	// Flush Pressure Buffer
+        // Flush IMU Buffer
+    	// Flush GPS Buffer
+    	// Flush ECG Buffer
+    	// Message Position via APRS
+    	// Update State Machine
     }
 
     // we should never get here 

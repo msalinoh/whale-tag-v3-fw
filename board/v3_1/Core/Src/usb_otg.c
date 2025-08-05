@@ -48,7 +48,7 @@ void MX_USB_OTG_HS_PCD_Init(void)
   // B-peripheral session valid override enable
   USB_OTG_HS->GCCFG |= USB_OTG_GCCFG_VBVALEXTOEN;
   USB_OTG_HS->GCCFG |= USB_OTG_GCCFG_VBVALOVAL;
-  return;
+
   /* USER CODE END USB_OTG_HS_Init 0 */
 
   /* USER CODE BEGIN USB_OTG_HS_Init 1 */

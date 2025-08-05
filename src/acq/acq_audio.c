@@ -1,5 +1,7 @@
 // our code
 #include "acq_audio.h"
+
+#include "led.h"
 // #include "config.h"
 
 // Middleware
@@ -14,6 +16,10 @@
 #include <stdbool.h>
 
 // Supported Hardware
+#define AUDIO_SAMPLE_RATE_SpS 96000
+#define AUDIO_BITDEPTH 24
+#define AUDIO_CHANNEL_COUNT 4
+
 #define ADC_AD7768 0
 #define AUDIO_ADC_PART_NUMBER ADC_AD7768
 #if AUDIO_ADC_PART_NUMBER == ADC_AD7768
@@ -22,7 +28,7 @@
     extern SPI_HandleTypeDef AUDIO_hspi;
 #endif
 
-extern DMA_HandleTypeDef handle_GPDMA1_Channel1;
+extern DMA_HandleTypeDef handle_GPDMA1_Channel0;
 
 #define AUDIO_CIRCULAR_BUFFER_SIZE_MAX (UINT16_MAX/2)
 #define AUDIO_CIRCULAR_BUFFER_SIZE  (AUDIO_CIRCULAR_BUFFER_SIZE_MAX)
@@ -38,6 +44,8 @@ static uint8_t s_circular_write_block = 0;
  */
 #define RETAIN_BUFFER_SIZE_BLOCKS 64
 #define RETAIN_BUFFER_BLOCK_TO_HALF(block) ((block)/(RETAIN_BUFFER_SIZE_BLOCKS/2))
+#define AUDIO_WRITE_INTERVAL_S ((double)(AUDIO_CIRCULAR_BUFFER_SIZE*RETAIN_BUFFER_SIZE_BLOCKS/2)/(double)(AUDIO_SAMPLE_RATE_SpS*(AUDIO_BITDEPTH/8)*AUDIO_CHANNEL_COUNT))
+
 #if RETAIN_BUFFER_SIZE_BLOCKS != 2
 static uint8_t s_circular_read_block = 0;
 static union {
@@ -50,6 +58,11 @@ static uint8_t sd_write_position = 0;
 #endif
 static uint8_t sd_read_position = 0;
 
+static uint8_t s_audio_capture_overflow = 0;
+
+
+static AcqAudioLogCallback s_acq_audio_log_callback = NULL;
+
 ad7768_dev audio_adc = {
     .spi_handler = &AUDIO_hspi,
     .spi_cs_port = AUDIO_NCS_GPIO_Output_GPIO_Port,
@@ -58,7 +71,7 @@ ad7768_dev audio_adc = {
         .ch[0] = AD7768_ENABLED,
         .ch[1] = AD7768_ENABLED,
         .ch[2] = AD7768_ENABLED,
-        .ch[3] = AD7768_STANDBY
+        .ch[3] = AD7768_ENABLED
     },
     .channel_mode[AD7768_MODE_A] = {.filter_type = AD7768_FILTER_SINC, .dec_rate = AD7768_DEC_X32},
     .channel_mode[AD7768_MODE_B] = {.filter_type = AD7768_FILTER_WIDEBAND, .dec_rate = AD7768_DEC_X32},
@@ -66,7 +79,7 @@ ad7768_dev audio_adc = {
         .ch[0] = AD7768_MODE_B,
         .ch[1] = AD7768_MODE_B,
         .ch[2] = AD7768_MODE_B,
-        .ch[3] = AD7768_MODE_A,
+        .ch[3] = AD7768_MODE_B,
     },
     .power_mode = {
         .sleep_mode = AD7768_ACTIVE,
@@ -99,12 +112,13 @@ void audio_retain_completeCallback(DMA_HandleTypeDef *hdma) {
 void audio_SAI_RxCpltCallback (SAI_HandleTypeDef * hsai){
     // HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
 #if RETAIN_BUFFER_SIZE_BLOCKS != 2
-    HAL_DMA_Start_IT(&handle_GPDMA1_Channel1, (uint32_t)s_audio_circular_buffer[s_circular_write_block], (uint32_t)s_ret_buffer.block[s_ret_buffer_write_block], AUDIO_CIRCULAR_BUFFER_SIZE_MAX);
+    HAL_DMA_Start_IT(&handle_GPDMA1_Channel0, (uint32_t)s_audio_circular_buffer[s_circular_write_block], (uint32_t)s_ret_buffer.block[s_ret_buffer_write_block], AUDIO_CIRCULAR_BUFFER_SIZE_MAX);
 	s_ret_buffer_write_block = (s_ret_buffer_write_block + 1) % RETAIN_BUFFER_SIZE_BLOCKS;
 	//check for overflows
 	if ((s_circular_write_block ^ 1) == s_circular_read_block){
-		// HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
-		while(1){;}
+		s_audio_capture_overflow = 1;
+        HAL_PWR_DisableSleepOnExit();
+        return;
 	}
     s_circular_write_block ^= 1;
 
@@ -153,8 +167,9 @@ void acq_audio_enable(void) {
      HAL_SAI_RegisterCallback(&hsai_BlockA1, HAL_SAI_RX_HALFCOMPLETE_CB_ID, audio_SAI_RxCpltCallback);
      HAL_SAI_RegisterCallback(&hsai_BlockA1, HAL_SAI_RX_COMPLETE_CB_ID, audio_SAI_RxCpltCallback);
 #if RETAIN_BUFFER_SIZE_BLOCKS != 2
-     HAL_DMA_RegisterCallback(&handle_GPDMA1_Channel1, HAL_DMA_XFER_CPLT_CB_ID, audio_retain_completeCallback);
+     HAL_DMA_RegisterCallback(&handle_GPDMA1_Channel0, HAL_DMA_XFER_CPLT_CB_ID, audio_retain_completeCallback);
 #endif
+
     // initialize transfer
      HAL_SAI_Receive_DMA(&hsai_BlockA1, s_audio_circular_buffer[0], 2*AUDIO_CIRCULAR_BUFFER_SIZE);
 //    HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
@@ -162,34 +177,9 @@ void acq_audio_enable(void) {
     s_audio_enabled = 1;
 }
 
-void acq_audio_flush(void){
-	sd_read_position ^= 1;
-}
-
-void acq_audio_get_flushable_region(uint8_t **ppData, size_t *pSize) {
-#if RETAIN_BUFFER_SIZE_BLOCKS != 2
-	if(sd_read_position == sd_write_position) {
-		*ppData = NULL;
-		*pSize = 0;
-		return;
-	}
-	*ppData = s_ret_buffer.half[sd_read_position];
-	*pSize = AUDIO_CIRCULAR_BUFFER_SIZE*RETAIN_BUFFER_SIZE_BLOCKS/2;
-#else
-	// optimization if retention buffer is size of circular buffer
-    if(sd_read_position == s_circular_write_block) {
-		*ppData = NULL;
-		*pSize = 0;
-		return;
-    }
-	*ppData = s_audio_circular_buffer[sd_read_position];
-	*pSize = AUDIO_CIRCULAR_BUFFER_SIZE;
-#endif
-}
-
 void acq_audio_disable(void) {
     // Deregister callbacks 
-     HAL_DMA_UnRegisterCallback(&handle_GPDMA1_Channel1, HAL_DMA_XFER_CPLT_CB_ID);
+     HAL_DMA_UnRegisterCallback(&handle_GPDMA1_Channel0, HAL_DMA_XFER_CPLT_CB_ID);
      HAL_SAI_UnRegisterCallback(&hsai_BlockA1, HAL_SAI_RX_HALFCOMPLETE_CB_ID);
      HAL_SAI_UnRegisterCallback(&hsai_BlockA1, HAL_SAI_RX_COMPLETE_CB_ID);
 
@@ -206,3 +196,29 @@ void acq_audio_disable(void) {
     s_audio_enabled = 0;
 }
 
+void acq_audio_set_log_callback(AcqAudioLogCallback cb) {
+    s_acq_audio_log_callback = cb;
+}
+
+void acq_audio_task(void) {
+	if (s_audio_capture_overflow) {
+		led_error();
+	}
+
+    if (sd_read_position != sd_write_position) {
+        if (s_acq_audio_log_callback != NULL) {
+            uint8_t *pData;
+            size_t data_size;
+#if RETAIN_BUFFER_SIZE_BLOCKS != 2
+            pData = s_ret_buffer.half[sd_read_position];
+            data_size = AUDIO_CIRCULAR_BUFFER_SIZE*RETAIN_BUFFER_SIZE_BLOCKS/2;
+#else
+            pData = s_audio_circular_buffer[sd_read_position];
+            data_size = AUDIO_CIRCULAR_BUFFER_SIZE;
+#endif
+            s_acq_audio_log_callback(pData, data_size);
+        }
+        sd_card_writing = 0;
+        sd_read_position = sd_write_position;
+    }
+}

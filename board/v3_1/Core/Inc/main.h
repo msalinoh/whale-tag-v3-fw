@@ -142,8 +142,9 @@ void Error_Handler(void);
 #define SENSOR_I2C_SDA_GPIO_Port GPIOB
 #define SENSOR_I2C1_SCL_Pin GPIO_PIN_8
 #define SENSOR_I2C1_SCL_GPIO_Port GPIOB
-#define KELLER_DRDY_GPIO_Input_Pin GPIO_PIN_9
-#define KELLER_DRDY_GPIO_Input_GPIO_Port GPIOB
+#define KELLER_DRDY_EXTI9_Pin GPIO_PIN_9
+#define KELLER_DRDY_EXTI9_GPIO_Port GPIOB
+#define KELLER_DRDY_EXTI9_EXTI_IRQn EXTI9_IRQn
 #define SAT_PM_2_Pin GPIO_PIN_0
 #define SAT_PM_2_GPIO_Port GPIOE
 
@@ -151,6 +152,10 @@ void Error_Handler(void);
 #define AUDIO_hspi hspi1
 #define BMS_hi2c hi2c3
 #define ECG_hi2c hi2c2
+#define KELLER_hi2c hi2c1
+
+#define BMS_htim htim1
+#define PRESSURE_htim htim3
 
 /* USER CODE END Private defines */
 

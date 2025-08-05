@@ -10,13 +10,18 @@
 #ifndef __CETI_WHALE_TAG_HAL_KELLER_4LD__
 #define __CETI_WHALE_TAG_HAL_KELLER_4LD__
 
-//#include "../utils/error.h" //for WTResult
+#include "stm32u5xx_hal.h"
 
 #include <stdint.h>
-#define PRESSURE_I2C_DEV_ADDR 0x40
-#define KELLER_4LD_RAW_TO_PRESSURE_BAR(raw) (((PRESSURE_MAX - PRESSURE_MIN) / 32768.0) * ((double)(raw)-16384.0))
-#define KELLER_4LD_RAW_TO_TEMPERATURE_C(raw) ((double)(((raw) >> 4) - 24) * .05 - 50.0)
 
-int pressure_get_measurement_raw(uint16_t *pPressure, uint16_t *pTemp);
+typedef struct {
+    uint8_t status;
+    uint16_t pressure;
+    uint16_t temperature;
+} Keller4LD_Measurement;
+
+HAL_StatusTypeDef keller4ld_request_measurement(void);
+HAL_StatusTypeDef keller4ld_read_status(uint8_t *pStatus);
+HAL_StatusTypeDef keller4ld_read_measurement(Keller4LD_Measurement *pData);
 
 #endif // __CETI_WHALE_TAG_HAL_KELLER_4LD__

@@ -12,15 +12,22 @@
 #include <stdint.h>
 
 // definitions
+#define AUDIO_SAMPLE_RATE 96000
+#define AUDIO_BITDEPTH 24
+#define AUDIO_CHANNEL_COUNT 4
+
 #define AUDIO_CIRCULAR_BUFFER_SIZE_MAX (UINT16_MAX/2)
 #define AUDIO_CIRCULAR_BUFFER_SIZE  (AUDIO_CIRCULAR_BUFFER_SIZE_MAX)
 
 #define RETAIN_BUFFER_SIZE_BLOCKS 64
 
+
+typedef int (* AcqAudioLogCallback)(uint8_t *pData, uint32_t size);
+
 // funcitons
 void acq_audio_disable(void);
 void acq_audio_enable(void);
-void acq_audio_get_flushable_region(uint8_t **ppData, size_t *pSize);
-void acq_audio_flush(void);
+void acq_audio_set_log_callback(AcqAudioLogCallback cb);
+void acq_audio_task(void);
 
 #endif // CETI_ACQ_AUDIO_H

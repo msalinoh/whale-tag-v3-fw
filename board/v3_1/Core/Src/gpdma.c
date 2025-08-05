@@ -38,8 +38,12 @@ void MX_GPDMA1_Init(void)
   __HAL_RCC_GPDMA1_CLK_ENABLE();
 
   /* GPDMA1 interrupt Init */
+    HAL_NVIC_SetPriority(GPDMA1_Channel0_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(GPDMA1_Channel0_IRQn);
     HAL_NVIC_SetPriority(GPDMA1_Channel1_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(GPDMA1_Channel1_IRQn);
+    HAL_NVIC_SetPriority(GPDMA1_Channel2_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(GPDMA1_Channel2_IRQn);
 
   /* USER CODE BEGIN GPDMA1_Init 1 */
 
@@ -48,13 +52,13 @@ void MX_GPDMA1_Init(void)
   handle_GPDMA1_Channel0.Init.Request = DMA_REQUEST_SW;
   handle_GPDMA1_Channel0.Init.BlkHWRequest = DMA_BREQ_SINGLE_BURST;
   handle_GPDMA1_Channel0.Init.Direction = DMA_MEMORY_TO_MEMORY;
-  handle_GPDMA1_Channel0.Init.SrcInc = DMA_SINC_FIXED;
-  handle_GPDMA1_Channel0.Init.DestInc = DMA_DINC_FIXED;
+  handle_GPDMA1_Channel0.Init.SrcInc = DMA_SINC_INCREMENTED;
+  handle_GPDMA1_Channel0.Init.DestInc = DMA_DINC_INCREMENTED;
   handle_GPDMA1_Channel0.Init.SrcDataWidth = DMA_SRC_DATAWIDTH_BYTE;
   handle_GPDMA1_Channel0.Init.DestDataWidth = DMA_DEST_DATAWIDTH_BYTE;
-  handle_GPDMA1_Channel0.Init.Priority = DMA_LOW_PRIORITY_LOW_WEIGHT;
-  handle_GPDMA1_Channel0.Init.SrcBurstLength = 1;
-  handle_GPDMA1_Channel0.Init.DestBurstLength = 1;
+  handle_GPDMA1_Channel0.Init.Priority = DMA_HIGH_PRIORITY;
+  handle_GPDMA1_Channel0.Init.SrcBurstLength = 64;
+  handle_GPDMA1_Channel0.Init.DestBurstLength = 64;
   handle_GPDMA1_Channel0.Init.TransferAllocatedPort = DMA_SRC_ALLOCATED_PORT0|DMA_DEST_ALLOCATED_PORT0;
   handle_GPDMA1_Channel0.Init.TransferEventMode = DMA_TCEM_BLOCK_TRANSFER;
   handle_GPDMA1_Channel0.Init.Mode = DMA_NORMAL;

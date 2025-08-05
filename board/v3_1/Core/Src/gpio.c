@@ -112,7 +112,7 @@ void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : ECG_ADC_NDRDY_GPIO_Input_Pin */
   GPIO_InitStruct.Pin = ECG_ADC_NDRDY_GPIO_Input_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(ECG_ADC_NDRDY_GPIO_Input_GPIO_Port, &GPIO_InitStruct);
 
@@ -173,11 +173,11 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : GPS_EXT_INT_GPIO_Input_Pin KELLER_DRDY_GPIO_Input_Pin */
-  GPIO_InitStruct.Pin = GPS_EXT_INT_GPIO_Input_Pin|KELLER_DRDY_GPIO_Input_Pin;
+  /*Configure GPIO pin : GPS_EXT_INT_GPIO_Input_Pin */
+  GPIO_InitStruct.Pin = GPS_EXT_INT_GPIO_Input_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPS_EXT_INT_GPIO_Input_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PH3 */
   GPIO_InitStruct.Pin = GPIO_PIN_3;
@@ -185,9 +185,18 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : KELLER_DRDY_EXTI9_Pin */
+  GPIO_InitStruct.Pin = KELLER_DRDY_EXTI9_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(KELLER_DRDY_EXTI9_GPIO_Port, &GPIO_InitStruct);
+
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI9_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_IRQn);
 
 }
 

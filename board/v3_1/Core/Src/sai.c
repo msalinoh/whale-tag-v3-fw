@@ -69,7 +69,7 @@ void MX_SAI1_Init(void)
   hsai_BlockA1.SlotInit.FirstBitOffset = 0;
   hsai_BlockA1.SlotInit.SlotSize = SAI_SLOTSIZE_DATASIZE;
   hsai_BlockA1.SlotInit.SlotNumber = 16;
-  hsai_BlockA1.SlotInit.SlotActive = 0x00000666;
+  hsai_BlockA1.SlotInit.SlotActive = 0x0000EEEE;
   if (HAL_SAI_Init(&hsai_BlockA1) != HAL_OK)
   {
     Error_Handler();
@@ -162,7 +162,7 @@ void HAL_SAI_MspInit(SAI_HandleTypeDef* saiHandle)
     }
 
     handle_GPDMA1_Channel1.Instance = GPDMA1_Channel1;
-    handle_GPDMA1_Channel1.InitLinkedList.Priority = DMA_HIGH_PRIORITY;
+    handle_GPDMA1_Channel1.InitLinkedList.Priority = DMA_LOW_PRIORITY_HIGH_WEIGHT;
     handle_GPDMA1_Channel1.InitLinkedList.LinkStepMode = DMA_LSM_FULL_EXECUTION;
     handle_GPDMA1_Channel1.InitLinkedList.LinkAllocatedPort = DMA_LINK_ALLOCATED_PORT0;
     handle_GPDMA1_Channel1.InitLinkedList.TransferEventMode = DMA_TCEM_BLOCK_TRANSFER;

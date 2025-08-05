@@ -43,12 +43,18 @@ HAL_StatusTypeDef ktd2026ewe_set_led_mode(uint8_t led_index, ktd2026ewe_LedMode 
     return __ktd2026ewe_write(KTD2026EWE_REG_CHANNEL_CONTROL, s_self.ch_control);
 }
 
+HAL_StatusTypeDef ktd2026ewe_set_modes(ktd2026ewe_LedMode mode0, ktd2026ewe_LedMode mode1, ktd2026ewe_LedMode mode2) {
+    s_self.ch_control = (mode0) | (mode1 << 2) | (mode1 << 4);
+    return __ktd2026ewe_write(KTD2026EWE_REG_CHANNEL_CONTROL, s_self.ch_control);
+}
+
 HAL_StatusTypeDef ktd2026ewe_set_led_current(uint8_t led_index, float current_mA) {
     current_mA = (current_mA < 0.125) ?  0.125 : current_mA;
     current_mA = (current_mA >= 24.0) ? 24.0 : current_mA;
     s_self.current[led_index] = (uint8_t)((192.0*current_mA/24.0) - 1.0);
     return __ktd2026ewe_write(KTD2026EWE_REG_IOUT_1 + led_index, s_self.current[led_index]);
 }
+
 
 HAL_StatusTypeDef ktd2026ewe_set_period_s(float period_s) {
     uint8_t bits =(uint8_t)(period_s/0.128);

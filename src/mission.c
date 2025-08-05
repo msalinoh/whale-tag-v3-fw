@@ -5,8 +5,10 @@
 //-----------------------------------------------------------------------------
 
 #include "mission.h"
+
 #include "log/log_audio.h"
-#include "mission/predeploy.c"
+#include "main.h"
+
 static MissionState s_state = MISSION_STATE_ERROR;
 
 void mission_set_state(MissionState next_state) {
@@ -19,6 +21,8 @@ void mission_set_state(MissionState next_state) {
 	switch (next_state) {
 		case MISSION_STATE_SURFACE:
 //			log_pressure_init();
+			break;
+		default:
 			break;
 	}
 
@@ -59,19 +63,38 @@ void mission_task(void) {
 				// ToDo: log GPS
 				// ToDo: log IMU
 				// ToDo: log ecg
+				// ToDo: log syslog task
 				break; // all tasks serviced exit loop;
 			}
 			break;
 
 		case MISSION_STATE_DIVE:
-			log_audio_task();
-			break;
+			/* sleep until an interrupt says there's something to do */ 
+			// ToDo: disable unused clocks
+			HAL_SuspendTick();
+			__disable_irq();
+			HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+			/*
+			* code to execute prior to jumping to IRQ here
+			*/
+			__enable_irq();
+			// ToDo: reenable clocks
+			HAL_ResumeTick();
+
+			/* tasks to execute on wake */
+
+			while(1) {
+				/* high priority - always check these*/
+				log_audio_task();
+				break; // all tasks serviced exit loop;
+			}			break;
 
 		case MISSION_STATE_BURN:
 			log_audio_task();
 			break;
 
 		case MISSION_STATE_RETRIEVE:
+			// disable audio recordings
 			break;
 
 		case MISSION_STATE_SHUTDOWN:

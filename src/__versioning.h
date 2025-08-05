@@ -12,6 +12,4 @@
 #define HW_VERSION_NUCLEO_DEV (0)
 #define HW_VERSION_3_1 (1)
 
-#define FW_VERSION_TEXT "v3_1.0 New hardware design"
-
 #endif // CETI_WHALE_TAG_VERSIONING_H

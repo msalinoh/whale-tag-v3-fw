@@ -9,6 +9,12 @@
 /******************************************************************************/
 #include "ad7768.h"
 #include <spi.h>
+
+// #define AD7768_DEBUG
+
+#ifdef AD7768_DEBUG
+#include "log/log_syslog.h"
+#endif
 // #include "util.h"
 //#include "audio.h"
 
@@ -56,7 +62,7 @@ static inline const ad7768_Reg_ChMode __reg_channelMode_fromRaw(const uint8_t ra
 
 static inline const uint8_t __reg_channelMode_intoRaw(const ad7768_Reg_ChMode *reg) {
 	return _LSHIFT(reg->filter_type, 3, 1) 
-		| _LSHIFT(reg->filter_type, 0, 3);
+		| _LSHIFT(reg->dec_rate, 0, 3);
 }
 
 static inline const ad7768_Reg_ChModeSelect __reg_channelModeSelect_fromRaw(const uint8_t raw) {
@@ -191,6 +197,10 @@ HAL_StatusTypeDef ad7768_spi_read(ad7768_dev *dev,
 
 	*reg_data = rx_buf[1];
 
+	#ifdef AD7768_DEBUG
+	CETI_LOG("READ:{ addr: %02xh, value: %02xh} via spi", reg_addr, *reg_data);
+	#endif
+
 	return ret;
 }
 
@@ -210,6 +220,16 @@ HAL_StatusTypeDef ad7768_spi_write(ad7768_dev *dev,
 	prv_ad7768_spi_select(dev);
 	ret = HAL_SPI_Transmit(dev->spi_handler, (uint8_t *)&buf, 2, ADC_TIMEOUT);
 	prv_ad7768_spi_deselect(dev);
+#ifdef AD7768_DEBUG
+	CETI_LOG("WROTE:{ addr: %02xh, value: %02xh} via spi", buf[0], buf[1]);
+	uint8_t result;
+	ad7768_spi_read(dev, reg_addr, &result);
+	if (result == reg_data) {
+		CETI_LOG("Write Verified");
+	} else {
+		CETI_ERR("Write not verified");
+	}
+#endif
 	return ret;
 }
 
@@ -635,6 +655,7 @@ HAL_StatusTypeDef ad7768_setup(ad7768_dev *dev){
         return HAL_ERROR;
     }
 
+	
 	ret |= ad7768_spi_write(dev, AD7768_REG_CH_STANDBY,    __reg_channelStandby_intoRaw(&dev->channel_standby));
 	ret |= ad7768_spi_write(dev, AD7768_REG_CH_MODE_A,     __reg_channelMode_intoRaw(&dev->channel_mode[AD7768_MODE_A]));
 	ret |= ad7768_spi_write(dev, AD7768_REG_CH_MODE_B,     __reg_channelMode_intoRaw(&dev->channel_mode[AD7768_MODE_B]));
@@ -643,6 +664,9 @@ HAL_StatusTypeDef ad7768_setup(ad7768_dev *dev){
 	ret |= ad7768_spi_write(dev, AD7768_REG_INTERFACE_CFG, __reg_interfaceCfg_intoRaw(&dev->interface_config));
 	ret |= ad7768_spi_write(dev, AD7768_REG_GPIO_CTRL, 	   0x00);
 	ret |= ad7768_sync(dev);
+
+	uint8_t error_reg; 
+	ad7768_spi_read(dev, 0x09, &error_reg);
 
 	// TODO: Add error detection and correction
 //	if (!ret)
