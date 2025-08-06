@@ -183,12 +183,19 @@ lint:
 lint_fix:
 	docker run \
 		-e RUN_LOCAL=true \
-		-e VALIDATE_CLANG_FORMAT=true \
+		-e VALIDATE_CPP=false \
+		-e VALIDATE_DOCKERFILE_HADOLINT=false \
+		-e VALIDATE_GITHUB_ACTIONS=false \
+		-e VALIDATE_JSCPD=false \
+		-e VALIDATE_MARKDOWN=false \
+		-e VALIDATE_NATURAL_LANGUAGE=false \
+		-e VALIDATE_YAML=false \
+		-e VALIDATE_GITLEAKS=false \
 		-e FIX_CLANG_FORMAT=true \
 		-e LINTER_RULES_PATH=.github/linters \
 		-e DEFAULT_BRANCH=main \
 		-e FILTER_REGEX_EXCLUDE='.*(board|lib)/.*' \
-		-v $(PWD)/.:/tmp/lint \
+		-v $(shell pwd):/tmp/lint \
 		--rm ghcr.io/super-linter/super-linter:latest
 
 include Test.mk

@@ -4,7 +4,7 @@
 // #include <stdint.h>
 // #include "stm32u5xx_hal.h"
 
-// typedef struct 
+// typedef struct
 // {
 //     uint32_t id;
 //     struct {
@@ -16,7 +16,7 @@
 //     uint32_t deployment_count;
 //     uint8_t pad[0x4];
 // } NvSettings;
-
+//
 // /* This objects exists in RAM */
 // extern NvSettings nv_settings;
 

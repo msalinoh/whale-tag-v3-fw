@@ -94,8 +94,8 @@ void Error_Handler(void);
 #define GPS_PWR_EN_GPIO_Output_GPIO_Port GPIOE
 #define SAT_PWR_EN_GPIO_Output_Pin GPIO_PIN_8
 #define SAT_PWR_EN_GPIO_Output_GPIO_Port GPIOE
-#define GPS_SAFEBOOT_N_GPIO_Output_Pin GPIO_PIN_9
-#define GPS_SAFEBOOT_N_GPIO_Output_GPIO_Port GPIOE
+#define GPS_SAFEBOOT_N_GPIO_Input_Pin GPIO_PIN_9
+#define GPS_SAFEBOOT_N_GPIO_Input_GPIO_Port GPIOE
 #define GPS_NRST_GPIO_Output_Pin GPIO_PIN_10
 #define GPS_NRST_GPIO_Output_GPIO_Port GPIOE
 #define DRY_GPIO_Analog_Pin GPIO_PIN_12
@@ -156,6 +156,8 @@ void Error_Handler(void);
 
 #define BMS_htim htim1
 #define PRESSURE_htim htim3
+
+#define GPS_huart huart1
 
 /* USER CODE END Private defines */
 

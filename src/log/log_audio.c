@@ -26,7 +26,6 @@ static uint8_t sd_card_busy = 0;
 
 static time_t s_audio_start_time_us;
 
-extern RTC_HandleTypeDef hrtc;
 extern FX_MEDIA sdio_disk;
 FX_FILE audio_file = {};
 

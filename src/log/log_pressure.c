@@ -1,6 +1,10 @@
+#include "log_pressure.h"
+
 #include <stdint.h>
 
-#include "log_pressure.h"
+#include <app_filex.h>
+
+#include "acq/acq_pressure.h"
 
 typedef enum {
     PRESSURE_FORMAT_BIN,
@@ -13,6 +17,7 @@ typedef enum {
 
 #define PRESSURE_FILENAME "data_pressure.csv"
 
+extern FX_MEDIA sdio_disk;
 FX_FILE pressure_file = {};
 
 
@@ -38,7 +43,7 @@ static void log_pressure_open_csv_file(void) {
 
     if (new_file) {
         // write header
-        fx_file_write(pressure_file, "Timestamp [uS], Notes, Pressure [Bar], Temperature [C]\n\r", );
+//        fx_file_write(pressure_file, "Timestamp [uS], Notes, Pressure [Bar], Temperature [C]\n\r", );
     }
     // Set "write complete" "callback"
     // fx_result = fx_file_write_notify_set(&pressure_file, audio_SDWriteComplete);

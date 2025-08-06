@@ -1,5 +1,6 @@
 #include <stdint.h>
 
+/* uBX communication protocol */
 typedef struct {
     uint8_t a;
     uint8_t b;
@@ -24,3 +25,5 @@ UbxChecksum ubx_calculate_checksum(const uint8_t *message, uint16_t msg_length) 
     }
     return cs;
 }
+
+/* Device */

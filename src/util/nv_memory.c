@@ -14,11 +14,10 @@
 
 // HAL_StatusTypeDef nv_settings_write(void) = {
 //     HAL_StatusTypeDef result = HAL_FLASH_Unlock();
-//     if (result != HAL_OK) { 
+//     if (result != HAL_OK) {
 //         return result;
 //     }
-    
-//     result = HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD, &nv_settings_flash, &nv_settings);
-//     HAL_FLASH_Lock();
-//     return result;
+
+//     result = HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD,
+//     &nv_settings_flash, &nv_settings); HAL_FLASH_Lock(); return result;
 // }

@@ -54,8 +54,8 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, AUDIO_VP_EN_GPIO_Output_Pin|GPS_PWR_EN_GPIO_Output_Pin|SAT_PWR_EN_GPIO_Output_Pin|GPS_SAFEBOOT_N_GPIO_Output_Pin
-                          |GPS_NRST_GPIO_Output_Pin|SAT_PM_2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, AUDIO_VP_EN_GPIO_Output_Pin|GPS_PWR_EN_GPIO_Output_Pin|SAT_PWR_EN_GPIO_Output_Pin|GPS_NRST_GPIO_Output_Pin
+                          |SAT_PM_2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(Audio_VN_NEN_GPIO_Output_GPIO_Port, Audio_VN_NEN_GPIO_Output_Pin, GPIO_PIN_SET);
@@ -76,9 +76,9 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(FLASHER_LED_EN_GPIO_Output_GPIO_Port, FLASHER_LED_EN_GPIO_Output_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : AUDIO_VP_EN_GPIO_Output_Pin Audio_VN_NEN_GPIO_Output_Pin GPS_PWR_EN_GPIO_Output_Pin SAT_PWR_EN_GPIO_Output_Pin
-                           GPS_SAFEBOOT_N_GPIO_Output_Pin GPS_NRST_GPIO_Output_Pin SAT_PM_2_Pin */
+                           GPS_NRST_GPIO_Output_Pin SAT_PM_2_Pin */
   GPIO_InitStruct.Pin = AUDIO_VP_EN_GPIO_Output_Pin|Audio_VN_NEN_GPIO_Output_Pin|GPS_PWR_EN_GPIO_Output_Pin|SAT_PWR_EN_GPIO_Output_Pin
-                          |GPS_SAFEBOOT_N_GPIO_Output_Pin|GPS_NRST_GPIO_Output_Pin|SAT_PM_2_Pin;
+                          |GPS_NRST_GPIO_Output_Pin|SAT_PM_2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -115,6 +115,12 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(ECG_ADC_NDRDY_GPIO_Input_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : GPS_SAFEBOOT_N_GPIO_Input_Pin */
+  GPIO_InitStruct.Pin = GPS_SAFEBOOT_N_GPIO_Input_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPS_SAFEBOOT_N_GPIO_Input_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PE11 DRY_GPIO_Analog_Pin PE13 PE14
                            PE15 */

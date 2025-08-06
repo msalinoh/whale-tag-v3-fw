@@ -197,6 +197,7 @@ int main(void) {
     acq_ecg_enable();
 
     CETI_LOG("Initializing GPS");
+    acq_gps_enable();
 
     CETI_LOG("Initializing ARGOS");
 
