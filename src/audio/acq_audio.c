@@ -1,7 +1,15 @@
-// our code
+/*****************************************************************************
+ *   @file      audio/acq_audio.c
+ *   @brief     audio acquisition code. Note this code just gather audio data 
+ *              into RAM, but does not perform any analysis, transformation, or
+ *              storage of said data.
+ *   @project   Project CETI
+ *   @copyright Harvard University Wood Lab
+ *   @authors   Michael Salino-Hugg, [TODO: Add other contributors here]
+ *****************************************************************************/
 #include "acq_audio.h"
 
-#include "led.h"
+#include "led/led_ctl.h"
 // #include "config.h"
 
 // Middleware
@@ -24,7 +32,7 @@
 #define AUDIO_ADC_PART_NUMBER ADC_AD7768
 
 #if AUDIO_ADC_PART_NUMBER == ADC_AD7768
-#include "device/ad7768.h" // this hardware is only used here, so no need for a header
+#include "ad7768.h" // this hardware is only used here, so no need for a header
 extern SAI_HandleTypeDef hsai_BlockA1;
 extern SPI_HandleTypeDef AUDIO_hspi;
 #endif
@@ -121,7 +129,6 @@ void audio_retain_completeCallback(DMA_HandleTypeDef *hdma) {
 #endif
 
 void audio_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai) {
-  // HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
 #if RETAIN_BUFFER_SIZE_BLOCKS != 2
   HAL_DMA_Start_IT(&handle_GPDMA1_Channel0,
                    (uint32_t)s_audio_circular_buffer[s_circular_write_block],
@@ -140,13 +147,11 @@ void audio_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai) {
 #else
   // check for overflows
   if ((s_circular_write_block ^ 1) == sd_read_position) {
-    // HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
     while (1) {
       ;
     }
   }
   s_circular_write_block ^= 1;
-  // HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_SET);
   HAL_PWR_DisableSleepOnExit();
 #endif
 }
@@ -198,7 +203,6 @@ void acq_audio_enable(void) {
   // initialize transfer
   HAL_SAI_Receive_DMA(&hsai_BlockA1, s_audio_circular_buffer[0],
                       2 * AUDIO_CIRCULAR_BUFFER_SIZE);
-  //    HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
 
   s_audio_enabled = 1;
 }

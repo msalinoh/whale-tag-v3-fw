@@ -6,7 +6,8 @@
 
 #include "mission.h"
 
-#include "log/log_audio.h"
+#include "audio/log_audio.h"
+#include "battery/log_battery.h"
 #include "main.h"
 
 static MissionState s_state = MISSION_STATE_ERROR;
@@ -56,9 +57,9 @@ void mission_task(void) {
 			while(1) {
 				/* high priority - always check these*/
 				log_audio_task();
-				// ToDo: log battery
+				log_battery_task();
 
-				/* normal priority - sequenc these, but don't block high priority*/
+				/* normal priority - sequence these, but don't block high priority*/
 				// ToDo: log depth
 				// ToDo: log GPS
 				// ToDo: log IMU
@@ -86,15 +87,21 @@ void mission_task(void) {
 			while(1) {
 				/* high priority - always check these*/
 				log_audio_task();
+				log_battery_task();
+
 				break; // all tasks serviced exit loop;
 			}			break;
 
 		case MISSION_STATE_BURN:
 			log_audio_task();
+			log_battery_task();
+
 			break;
 
 		case MISSION_STATE_RETRIEVE:
 			// disable audio recordings
+			log_battery_task();
+
 			break;
 
 		case MISSION_STATE_SHUTDOWN:

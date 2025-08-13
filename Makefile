@@ -65,6 +65,7 @@ endif
 # Generate dependency information
 C_INCLUDES += $(addprefix -I,$(shell find board/$(BOARD) -type d \( -iname 'inc' -o -iname 'include' -o -iwholename '*/inc/legacy' -o -iname 'app' \) 2> /dev/null))
 C_INCLUDES += -Ilib/tinyusb/src
+C_INCLUDES += -Ilib/sh2
 C_INCLUDES += -Isrc
 C_INCLUDES += -Iboard/$(BOARD)/FileX/Target
 CFLAGS += $(MCU) $(C_DEFS) $(C_INCLUDES) $(COPT) -Wall -fdata-sections -ffunction-sections
@@ -89,7 +90,7 @@ VERSION_H := $(SRC_DIR)/version.h
 C_SRCS = $(shell find src -type f -iname '*.c' 2> /dev/null)
 C_SRCS += $(shell find board/$(BOARD) -type f -iname '*.c' 2> /dev/null)
 C_SRCS += $(shell find lib/tinyusb/src -type f -iname '*.c' 2> /dev/null) #tinyusb
-
+C_SRCS += $(shell find lib/sh2 -type f -iname '*.c' 2> /dev/null) #sh2 for BNO08x
 
 ASM_SRCS = $(shell find board/$(BOARD) src -type f -iname '*.s' 2> /dev/null)
 C_OBJS = $(addprefix $(BUILD_DIR)/,$(patsubst %.c, %.c.o, $(C_SRCS)))
@@ -123,7 +124,7 @@ build: $(DOCKER_IMAGE)
 		$(DOCKER_IMAGE) \
 			make
 
-# src/__versioning.h
+# src/version_hw.h
 $(VERSION_H):
 	$(call print2,Updating version info:,$(GIT_VERSION_INFO),$@)
 	@echo "#ifndef CETI_WHALE_TAG_VER_H" > $@

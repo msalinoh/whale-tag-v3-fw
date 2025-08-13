@@ -1,12 +1,15 @@
 /*****************************************************************************
- *   @file   acq/acq_ecg.h
+ *   @file   acq_ecg.h
  *   @brief  ecg acquisition code. Note this code just gathers ecg data
  *           into RAM, but does not perform any analysis, transformation, or
  *           storage of said data.
- *   @author Michael Salino-Hugg (msalinohugg@seas.harvard.edu)
+ *   @project   Project CETI
+ *   @copyright Harvard University Wood Lab
+ *   @authors   Michael Salino-Hugg, [TODO: Add other contributors here]
  *****************************************************************************/
+
 #include "acq_ecg.h"
-#include "device/ads1219.h"
+#include "ads1219.h"
 
 #include "i2c.h"
 #include "main.h"

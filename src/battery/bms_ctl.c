@@ -1,4 +1,12 @@
-#include "device/max17320.h"
+/*****************************************************************************
+ *   @file      battery/bms_ctl.c
+ *   @brief     High level runtime BMS control
+ *   @project   Project CETI
+ *   @copyright Harvard University Wood Lab
+ *   @authors   Michael Salino-Hugg, [TODO: Add other contributors here]
+ *****************************************************************************/
+#include "max17320.h"
+
 #include "log/log_syslog.h"
 #include "util/error.h"
 
@@ -39,7 +47,7 @@ const NvExpected g_nv_expected[] = {
  *
  * @return int true if match, else false
  */
-int cmd_bms_verify(void) {
+int bms_ctl_verify(void) {
     // char err_str[512];
     int incorrect = 0;
     CETI_LOG("Nonvoltile RAM Settings:"); // echo it
@@ -58,7 +66,7 @@ int cmd_bms_verify(void) {
            CETI_WARN("%-12s: 0x%04x != 0x%04x !!!!", g_nv_expected[i].name, actual, g_nv_expected[i].value);
             incorrect++;
         } else {
-           CETI_LOG("%-12s: 0x%04x  OK!\n", g_nv_expected[i].name, actual);
+           CETI_LOG("%-12s: 0x%04x  OK!", g_nv_expected[i].name, actual);
         }
     }
 
@@ -69,7 +77,7 @@ int cmd_bms_verify(void) {
     return 1;
 }
 
-int cmd_bms_program_nonvolatile_memory(void) {
+int bms_ctl_program_nonvolatile_memory(void) {
     WTResult hw_result = max17320_clear_write_protection();
     if (hw_result != 0) {
     	return -1;
@@ -87,3 +95,20 @@ int cmd_bms_program_nonvolatile_memory(void) {
     return 0;
 }
 
+int bms_ctl_temporary_overwrite_nv_values(void) {
+    int hw_result = max17320_clear_write_protection();
+    if (hw_result == WT_OK) {
+        for (int i = 0; i < sizeof(g_nv_expected) / sizeof(*g_nv_expected); i++) {
+            CETI_WARN("%-12s: 0x%04x", g_nv_expected[i].name, g_nv_expected[i].value);
+            hw_result = max17320_write(g_nv_expected[i].addr, g_nv_expected[i].value);
+            if (hw_result != WT_OK) {
+                break;
+            }
+        }
+    }
+    if (hw_result == WT_OK) {
+        // soft reset to have gauge initialize with values we wrote to shadow ram
+        hw_result = max17320_gauge_reset();
+    }
+    return hw_result;
+}

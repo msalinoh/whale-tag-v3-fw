@@ -9,7 +9,8 @@
 #ifndef CETI_WHALE_TAG_VERSIONING_H
 #define CETI_WHALE_TAG_VERSIONING_H
 
-#define HW_VERSION_NUCLEO_DEV (0)
-#define HW_VERSION_3_1 (1)
+// Possible values for HW_VERSION, defined in makefile by sem
+#define HW_VERSION_NUCLEO_DEV 0
+#define HW_VERSION_3_1_0 1
 
 #endif // CETI_WHALE_TAG_VERSIONING_H

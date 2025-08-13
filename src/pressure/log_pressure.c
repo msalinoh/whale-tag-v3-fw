@@ -1,10 +1,19 @@
+/*****************************************************************************
+ *   @file      log_pressure.c
+ *   @brief     pressure processing and storing code.
+ *   @project   Project CETI
+ *   @copyright Harvard University Wood Lab
+ *   @authors   Michael Salino-Hugg, [TODO: Add other contributors here]
+ *****************************************************************************/
 #include "log_pressure.h"
+#include "acq_pressure.h"
+
+#include "log/log_syslog.h"
 
 #include <stdint.h>
 
 #include <app_filex.h>
 
-#include "acq/acq_pressure.h"
 
 typedef enum {
     PRESSURE_FORMAT_BIN,
@@ -22,7 +31,7 @@ FX_FILE pressure_file = {};
 
 
 static void log_pressure_open_csv_file(void) {
-    /* Create/open audio file */
+    /* Create/open presure file */
     UINT fx_result = FX_ACCESS_ERROR;
     fx_result = fx_file_create(&sdio_disk, PRESSURE_FILENAME);
     int new_file = 0;

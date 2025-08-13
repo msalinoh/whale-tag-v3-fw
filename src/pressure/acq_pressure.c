@@ -1,3 +1,10 @@
+/*****************************************************************************
+ *   @file      acq_pressure.c
+ *   @brief     pressure acquisition code.
+ *   @project   Project CETI
+ *   @copyright Harvard University Wood Lab
+ *   @authors   Michael Salino-Hugg, [TODO: Add other contributors here]
+ *****************************************************************************/
 #include "acq_pressure.h"
 
 #include "main.h"

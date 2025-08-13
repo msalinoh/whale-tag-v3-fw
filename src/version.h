@@ -1,4 +1,4 @@
 #ifndef CETI_WHALE_TAG_VER_H
 #define CETI_WHALE_TAG_VER_H
-#define FW_VERSION_TEXT "1754430298: 1cb691a - capturing audio"
+#define FW_VERSION_TEXT "1754510485: be97d63 - lint codebase"
 #endif // CETI_WHALE_TAG_VERSIONING_H

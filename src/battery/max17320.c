@@ -1,12 +1,22 @@
+/*****************************************************************************
+ *   @file      battery/max17320.c
+ *   @brief     MAX17320+ BMS device driver 
+ *   @project   Project CETI
+ *   @copyright Harvard University Wood Lab
+ *   @authors   Michael Salino-Hugg, [TODO: Add other contributors here]
+ *****************************************************************************/
 #include "max17320.h"
+#include "version_hw.h"
 
 #include "stm32u5xx_hal.h"
 
 #define BMS_I2C_DEV_ADDR_UPPER (0x0b) // For internal memory range 180h-1FFh
 #define BMS_I2C_DEV_ADDR_LOWER (0x36) // For internal memory range 000h-0FFh
 
-#if HW_VERSION == HW_VERSION_3_1
+#if (HW_VERSION == HW_VERSION_3_1_0)
     #define BMS_hi2c hi2c3
+#else 
+#error HW_VERSION_3_1_0
 #endif
 
 typedef struct {
@@ -61,7 +71,7 @@ HAL_StatusTypeDef max17320_read(uint16_t memory, uint16_t *storage) {
         addr = BMS_I2C_DEV_ADDR_UPPER;
     }
 
-    return HAL_I2C_Mem_Read(self.hi2c, (addr << 1), memory, I2C_MEMADD_SIZE_8BIT, (uint8_t *)storage, sizeof(uint16_t), 1000);
+    return HAL_I2C_Mem_Read(self.hi2c, (addr << 1), memory, I2C_MEMADD_SIZE_8BIT, (uint8_t *)storage, sizeof(uint16_t), 1);
 }
 
 
@@ -78,7 +88,7 @@ HAL_StatusTypeDef max17320_write(uint16_t memory, uint16_t data) {
         memory = memory & 0xFF;
         addr = BMS_I2C_DEV_ADDR_UPPER;
     }
-    return HAL_I2C_Mem_Write(self.hi2c, (addr << 1), memory, I2C_MEMADD_SIZE_8BIT, (uint8_t *)&data, sizeof(uint16_t), 1000);
+    return HAL_I2C_Mem_Write(self.hi2c, (addr << 1), memory, I2C_MEMADD_SIZE_8BIT, (uint8_t *)&data, sizeof(uint16_t), 1);
 }
 
 WTResult max17320_clear_write_protection(void) {
@@ -148,7 +158,7 @@ int max17320_get_cell_temperature_raw(int cell_index, uint16_t *tCells) {
     return max17320_read(0x13A - cell_index, tCells);
 }
 
-int max17320_get_cell_temperature_c(int cell_index, float *tCells_c) {
+int max17320_get_cell_temperature_c(int cell_index, double *tCells_c) {
     uint16_t raw;
     int status = max17320_get_cell_temperature_raw(cell_index,&raw);
     if( status != 0) {
@@ -159,4 +169,62 @@ int max17320_get_cell_temperature_c(int cell_index, float *tCells_c) {
         *tCells_c = __raw_to_temperature_c(raw);
     }
     return 0;
+}
+
+int max17320_get_cell_voltage_raw(int cell_index, uint16_t *vCells) {
+    if (cell_index >= MAX17320_CELL_COUNT) {
+        return -1;
+        // return WT_RESULT(WT_DEV_BMS, WT_ERR_BMS_BAD_CELL_INDEX);
+    }
+    return max17320_read(0xD8 - cell_index, vCells);
+}
+
+int max17320_get_cell_voltage_v(int cell_index, double *vCells_v) {
+    uint16_t raw;
+    int status = max17320_get_cell_voltage_raw(cell_index, &raw);
+    if( status != 0) {
+        return status;
+    }
+    if (vCells_v != NULL) {
+        *vCells_v = __raw_to_voltage_v(raw);
+    }
+    return 0;
+}
+
+int max17320_get_current_raw(uint16_t *pCurrent) {
+    return max17320_read(MAX17320_REG_BATT_CURRENT, pCurrent);
+}
+
+int max17320_get_current_mA(double *pCurrent_mA) {
+    uint16_t raw = 0;
+    int status = max17320_get_current_raw(&raw);
+    if( status != 0) {
+        return status;
+    }
+    if (pCurrent_mA != NULL) {
+        *pCurrent_mA = __current_mA_from_raw(raw, (R_SENSE_VAL * 1000.0));
+    }
+    return 0;
+}
+
+int max17320_get_average_current_mA(double *pAvgI_mA) {
+    uint16_t read = 0;
+    WT_TRY(max17320_read(MAX17320_REG_AVG_BATT_CURRENT, &read));
+    if (pAvgI_mA != NULL) {
+        *pAvgI_mA = __current_mA_from_raw(read, (R_SENSE_VAL * 1000.0));
+    }
+    return 0;
+}
+
+int max17320_get_state_of_charge_raw(uint16_t *pSoc) {
+    return max17320_read(MAX17320_REG_REP_SOC, pSoc);
+}
+
+int max17320_get_state_of_charge(double *pSoc) {
+    uint16_t raw = 0;
+    WT_TRY(max17320_get_state_of_charge_raw(&raw));
+    if (pSoc != NULL) {
+        *pSoc = __raw_to_percentage(raw);
+    }
+    return WT_OK;
 }

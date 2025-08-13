@@ -1,8 +1,10 @@
 /***************************************************************************//**
- *   @file
- *   @brief  Implementation of AD7768 Driver.
- *   @author Michael Salino-Hugg (msalinohugg@seas.harvard.edu)
-*******************************************************************************/
+ *   @file      audio/ad7768.c
+ *   @brief     Implementation of AD7768-4 Driver.
+ *   @project   Project CETI
+ *   @copyright Harvard University Wood Lab
+ *   @authors   Michael Salino-Hugg, [TODO: Add other contributors here]
+ *****************************************************************************/
 
 /******************************************************************************/
 /***************************** Include Files **********************************/

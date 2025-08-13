@@ -21,16 +21,16 @@
 #include "tusb.h"
 
 /* Local Includes */
-#include "acq/acq_ecg.h"
-#include "acq/acq_pressure.h"
-#include "log/log_audio.h"
-#include "led.h"
+#include "audio/log_audio.h"
+#include "ecg/acq_ecg.h"
+#include "led/led_ctl.h"
+#include "pressure/acq_pressure.h"
 #include "mission.h"
 #include "usb/usb.h"
-#include "util/timing.h"
+#include "timing.h"
 #include "version.h"
-#include "device/max17320.h"
-//#include "cmd/cmd_bms.h"
+#include "battery/max17320.h"
+//#include "cmd/bms_ctl.h"
 
 #include "log/log_syslog.h"
 
@@ -65,8 +65,8 @@ static void SystemPower_Config(void)
 /* USER CODE END PWR */
 }
 
-int cmd_bms_verify(void);
-int cmd_bms_program_nonvolatile_memory(void);
+int bms_ctl_verify(void);
+int bms_ctl_program_nonvolatile_memory(void);
 
 void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
 {
@@ -173,7 +173,7 @@ int main(void) {
       
     /* perform runtime system hardware test to detect available systems */
     CETI_LOG("Initializing BMS");
-
+    log_battery_enable();
 
     CETI_LOG("Enabling VHF Pinger");
 
@@ -186,18 +186,18 @@ int main(void) {
     
     CETI_LOG("Initializing Pressure");
     // GPS pulls entire bus low if not powered
-    HAL_GPIO_WritePin(GPS_PWR_EN_GPIO_Output_GPIO_Port, GPS_PWR_EN_GPIO_Output_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPS_NRST_GPIO_Output_GPIO_Port, GPS_NRST_GPIO_Output_Pin, GPIO_PIN_SET);
-    acq_pressure_enable();
+//    HAL_GPIO_WritePin(GPS_PWR_EN_GPIO_Output_GPIO_Port, GPS_PWR_EN_GPIO_Output_Pin, GPIO_PIN_SET);
+//    HAL_GPIO_WritePin(GPS_NRST_GPIO_Output_GPIO_Port, GPS_NRST_GPIO_Output_Pin, GPIO_PIN_SET);
+//    acq_pressure_enable();
 
     CETI_LOG("Initializing IMU");
 
     CETI_LOG("Initializing ECG");
-    MX_I2C2_Init(); // ECG ADC
-    acq_ecg_enable();
+    // MX_I2C2_Init(); // ECG ADC
+    // acq_ecg_enable();
 
     CETI_LOG("Initializing GPS");
-    acq_gps_enable();
+    // acq_gps_enable();
 
     CETI_LOG("Initializing ARGOS");
 

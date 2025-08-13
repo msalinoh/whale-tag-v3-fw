@@ -1,9 +1,16 @@
+/*****************************************************************************
+ *   @file      audio/log_audio.c
+ *   @brief     Audio sample processing and logging code
+ *   @project   Project CETI
+ *   @copyright Harvard University Wood Lab
+ *   @authors   Michael Salino-Hugg, [TODO: Add other contributors here]
+ *****************************************************************************/
 // local files
 #include "log_audio.h"
+#include "acq_audio.h"
 
-#include "acq/acq_audio.h"
 #include "log/log_syslog.h"
-#include "util/timing.h"
+#include "timing.h"
 
 // stm libraries
 #include <app_filex.h>
