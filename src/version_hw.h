@@ -1,8 +1,11 @@
-//-----------------------------------------------------------------------------
-// Project: CETI Tag Electronics
-// Copyright: Harvard University Wood Lab
-// Contributors: Michael Salino-Hugg, [TODO: Add other contributors here]
-//-----------------------------------------------------------------------------
+/*****************************************************************************
+ *   @file      version_hw.h
+ *   @brief     header indicating hardware version differences and firmware 
+ *              compatibility options
+ *   @project   Project CETI
+ *   @copyright Harvard University Wood Lab
+ *   @authors   Michael Salino-Hugg, [TODO: Add other contributors here]
+ *****************************************************************************/
 // Version Date Description
 // 3_1.0   03/13/25 Begin work, establish framework
 
@@ -12,5 +15,8 @@
 // Possible values for HW_VERSION, defined in makefile by sem
 #define HW_VERSION_NUCLEO_DEV 0
 #define HW_VERSION_3_1_0 1
+
+// Hardware Configuration
+
 
 #endif // CETI_WHALE_TAG_VERSIONING_H

@@ -11,5 +11,7 @@
 int bms_ctl_verify(void);
 int bms_ctl_program_nonvolatile_memory(void);
 int bms_ctl_temporary_overwrite_nv_values(void);
+int bms_ctl_reset_FETs(void);
+
 
 #endif // CETI_BMS_CTL_H

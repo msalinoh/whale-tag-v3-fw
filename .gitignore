@@ -10,3 +10,6 @@ board/nucleo/*/
 .cproject
 .project
 *.launch
+
+#ignore vscode files
+.vscode

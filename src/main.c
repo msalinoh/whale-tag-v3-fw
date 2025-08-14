@@ -22,15 +22,15 @@
 
 /* Local Includes */
 #include "audio/log_audio.h"
+#include "battery/log_battery.h"
+#include "battery/bms_ctl.h"
 #include "ecg/acq_ecg.h"
 #include "led/led_ctl.h"
-#include "pressure/acq_pressure.h"
 #include "mission.h"
-#include "usb/usb.h"
+#include "pressure/log_pressure.h"
 #include "timing.h"
+#include "usb/usb.h"
 #include "version.h"
-#include "battery/max17320.h"
-//#include "cmd/bms_ctl.h"
 
 #include "log/log_syslog.h"
 
@@ -87,6 +87,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 			acq_ecg_EXTI_Callback();
 			break;
 		case IMU_NINT_GPIO_Input_Pin: //10
+            acq_imu_EXTI_Callback();
 			// ToDo: implement IMU data ready interrupt
 			break;
 		default:
@@ -122,6 +123,15 @@ int main(void) {
         CETI_LOG("Program started!");
     }
     
+    /* basic BMS validation */
+    int bms_settings_verified = bms_ctl_verify();
+    if (!bms_settings_verified) {
+        // CETI_ERR("MAX17320 nonvolatile memory was not as expected: %s", wt_strerror_r(hw_result, err_str, sizeof(err_str)));
+        CETI_ERR("Consider rewriting NV memory!!!!");
+        CETI_LOG("Attempting to overlay values:");
+        bms_ctl_temporary_overwrite_nv_values();
+    }
+    bms_ctl_reset_FETs(); // enable charging and discharging
     
     /* Detect if the external interface is present to enable USB for offload/debug/DFU */
     if (usb_iface_present()) {
@@ -174,10 +184,6 @@ int main(void) {
     /* perform runtime system hardware test to detect available systems */
     CETI_LOG("Initializing BMS");
     log_battery_enable();
-
-    CETI_LOG("Enabling VHF Pinger");
-
-
       
     /* enable Audio -5V */
     CETI_LOG("Initializing Audio");
@@ -186,14 +192,14 @@ int main(void) {
     
     CETI_LOG("Initializing Pressure");
     // GPS pulls entire bus low if not powered
-//    HAL_GPIO_WritePin(GPS_PWR_EN_GPIO_Output_GPIO_Port, GPS_PWR_EN_GPIO_Output_Pin, GPIO_PIN_SET);
-//    HAL_GPIO_WritePin(GPS_NRST_GPIO_Output_GPIO_Port, GPS_NRST_GPIO_Output_Pin, GPIO_PIN_SET);
-//    acq_pressure_enable();
+    HAL_GPIO_WritePin(GPS_PWR_EN_GPIO_Output_GPIO_Port, GPS_PWR_EN_GPIO_Output_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPS_NRST_GPIO_Output_GPIO_Port, GPS_NRST_GPIO_Output_Pin, GPIO_PIN_SET);
+    log_pressure_enable();
 
     CETI_LOG("Initializing IMU");
 
     CETI_LOG("Initializing ECG");
-    // MX_I2C2_Init(); // ECG ADC
+    MX_I2C2_Init(); // ECG ADC
     // acq_ecg_enable();
 
     CETI_LOG("Initializing GPS");
@@ -208,17 +214,6 @@ int main(void) {
     mission_set_state(MISSION_STATE_SURFACE);
     while(1){
         mission_task();
-    	/* List of possible tasks */
-        // log_audio_task();
-    	// Flush Audio Buffer
-    	// Empty
-    	// Flush Battery
-    	// Flush Pressure Buffer
-        // Flush IMU Buffer
-    	// Flush GPS Buffer
-    	// Flush ECG Buffer
-    	// Message Position via APRS
-    	// Update State Machine
     }
 
     // we should never get here 

@@ -130,4 +130,9 @@ WTResult max17320_clear_write_protection(void);
 WTResult max17320_reset(void);
 WTResult max17320_swap_shadow_ram(void);
 
+WTResult max17320_enable_charging(void);
+WTResult max17320_enable_discharging(void);
+WTResult max17320_disable_charging(void);
+WTResult max17320_disable_discharging(void);
+
 #endif // CETI_DEVICE_MAX17320_H

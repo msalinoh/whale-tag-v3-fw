@@ -199,8 +199,6 @@ static void log_battery_open_csv_file(void) {
     }
     CETI_LOG("Opened battery file \"%s\"", LOG_BATTERY_FILENAME);
 
-//    fx_result  = fx_file_relative_seek(&log_battery_file, 0, FX_SEEK_END);
-
     if (!is_new_file) {
         return;
     }   
@@ -266,8 +264,8 @@ void log_battery_task(void) {
         pSample = acq_battery_get_next_sample();
     }
 
+    // write remaining samples to SD card
     if (encoded_bytes != 0) {
-        // write remaining samples to SD card
         // Flush buffer to SD card
         UINT fx_result = fx_file_write(&log_battery_file, log_battery_encode_buffer, encoded_bytes);
         if (fx_result != FX_SUCCESS) {

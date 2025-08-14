@@ -228,3 +228,35 @@ int max17320_get_state_of_charge(double *pSoc) {
     }
     return WT_OK;
 }
+
+WTResult max17320_enable_charging(void) {
+    uint16_t value = 0;
+    WT_TRY(max17320_read(MAX17320_REG_COMM_STAT, &value));
+    value &= ~CHARGE_OFF;
+    WT_TRY(max17320_write(MAX17320_REG_COMM_STAT, value));
+    return WT_OK;
+}
+
+WTResult max17320_enable_discharging(void) {
+    uint16_t value = 0;
+    WT_TRY(max17320_read(MAX17320_REG_COMM_STAT, &value));
+    value &= ~DISCHARGE_OFF;
+    WT_TRY(max17320_write(MAX17320_REG_COMM_STAT, value));
+    return WT_OK;
+}
+
+WTResult max17320_disable_charging(void) {
+    uint16_t value = 0;
+    WT_TRY(max17320_read(MAX17320_REG_COMM_STAT, &value));
+    value |= CHARGE_OFF;
+    WT_TRY(max17320_write(MAX17320_REG_COMM_STAT, value));
+    return WT_OK;
+}
+
+WTResult max17320_disable_discharging(void) {
+    uint16_t value = 0;
+    WT_TRY(max17320_read(MAX17320_REG_COMM_STAT, &value));
+    value |= DISCHARGE_OFF;
+    WT_TRY(max17320_write(MAX17320_REG_COMM_STAT, DISCHARGE_OFF));
+    return WT_OK;
+}

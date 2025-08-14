@@ -19,10 +19,10 @@ extern TIM_HandleTypeDef BATTERY_htim;
 
 #define ACQ_BATTERY_BUFFER_SIZE (8)
 
-CetiBatterySample acq_battery_buffer[ACQ_BATTERY_BUFFER_SIZE];
-size_t acq_battery_buffer_write_position = 0;
-size_t acq_battery_buffer_latest_position = 0;
-size_t acq_battery_buffer_read_position = 0;
+static CetiBatterySample acq_battery_buffer[ACQ_BATTERY_BUFFER_SIZE];
+static volatile size_t acq_battery_buffer_write_position = 0;
+static volatile size_t acq_battery_buffer_latest_position = 0;
+static size_t acq_battery_buffer_read_position = 0;
 
 /* wrapped to make read-only*/
 size_t acq_battery_buffer_get_write_position(void) {
@@ -67,7 +67,7 @@ void acq_battery_get_sample(CetiBatterySample *pSample) {
     }
 }
 
-void __acq_battery_timer_complete_cb(TIM_HandleTypeDef *htim) {
+static void __acq_battery_timer_complete_cb(TIM_HandleTypeDef *htim) {
     acq_battery_get_sample(&acq_battery_buffer[acq_battery_buffer_write_position]);
     acq_battery_buffer_latest_position = acq_battery_buffer_write_position;
     size_t next_w_pos = (acq_battery_buffer_latest_position + 1) % ACQ_BATTERY_BUFFER_SIZE;
@@ -91,25 +91,16 @@ const CetiBatterySample* acq_battery_get_next_sample(void) {
  * 
  * @return const CetiBatterySample* 
  */
-const CetiBatterySample* acq_battery_peak_latest_sample(void) {
-    return &acq_battery_buffer[acq_battery_buffer_latest_position];
+void acq_battery_peak_latest_sample(CetiBatterySample *pSample) {
+    if (pSample != NULL) {
+        memcpy(pSample, &acq_battery_buffer[acq_battery_buffer_latest_position], sizeof(CetiBatterySample));
+    }
 }
-
 /**
  * @brief starts data acquisition of battery samples on 1 second interval
  * 
  */
 void acq_battery_enable(void) {
-    // validate max17320
-    int bms_settings_verified = bms_ctl_verify();
-    if (!bms_settings_verified) {
-        // CETI_ERR("MAX17320 nonvolatile memory was not as expected: %s", wt_strerror_r(hw_result, err_str, sizeof(err_str)));
-        CETI_ERR("    Consider rewriting NV memory!!!!");
-        CETI_LOG("Attempting to overlay values:");
-        bms_ctl_temporary_overwrite_nv_values();
-    }
-
-	max17320_clear_write_protection();
     //Note: consider not using MX_TIM2 generated code to move easily swap timers 
     MX_TIM2_Init();
     HAL_TIM_RegisterCallback(&BATTERY_htim, HAL_TIM_PERIOD_ELAPSED_CB_ID, __acq_battery_timer_complete_cb);

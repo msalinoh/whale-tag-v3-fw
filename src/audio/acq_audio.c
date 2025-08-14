@@ -217,7 +217,6 @@ void acq_audio_disable(void) {
 
   // ToDo: Disable unused MCU resources
   HAL_SAI_DeInit(&hsai_BlockA1);
-  HAL_SPI_DeInit(&AUDIO_hspi);
 
   /* turn off power to audio front-end */
   HAL_GPIO_WritePin(AUDIO_VP_EN_GPIO_Output_GPIO_Port,

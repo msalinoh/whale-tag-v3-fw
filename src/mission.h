@@ -8,8 +8,6 @@
 #define CETI_WHALE_TAG_MISSON_H
 
 typedef enum {
-	MISSION_STATE_PREDEPLOY,
-	MISSION_STATE_OFFLOAD,
 	MISSION_STATE_SURFACE,
 	MISSION_STATE_DIVE,
 	MISSION_STATE_BURN,
@@ -21,5 +19,6 @@ typedef enum {
 
 
 void mission_task(void);
+void mission_set_state(MissionState next_state);
 
 #endif // CETI_WHALE_TAG_MISSION_H

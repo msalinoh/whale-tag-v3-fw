@@ -150,6 +150,7 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 #define AUDIO_hspi hspi1
+#define IMU_hspi hspi1
 #define BMS_hi2c hi2c3
 #define ECG_hi2c hi2c2
 #define KELLER_hi2c hi2c1

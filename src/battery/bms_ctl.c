@@ -112,3 +112,25 @@ int bms_ctl_temporary_overwrite_nv_values(void) {
     }
     return hw_result;
 }
+
+static int discharging_disabled = -1;
+static int charging_disabled = -1;
+
+int bms_ctl_reset_FETs(void) {
+    WTResult hw_result = WT_OK;
+    hw_result = max17320_enable_discharging();
+    if (hw_result != WT_OK) {
+        char err_str[512];
+        // CETI_ERR("Could not enable discharging FET: %s", wt_strerror_r(hw_result, err_str, sizeof(err_str)));
+        return hw_result;
+    }
+    discharging_disabled = 0;
+    hw_result = max17320_enable_charging();
+    if (hw_result != WT_OK) {
+        char err_str[512];
+        // CETI_ERR("Could not enable charging FET: %s", wt_strerror_r(hw_result, err_str, sizeof(err_str)));
+        return hw_result;
+    }
+    charging_disabled = 0;
+    return WT_OK;
+}
