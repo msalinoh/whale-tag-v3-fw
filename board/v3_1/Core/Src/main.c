@@ -153,6 +153,7 @@ static void SystemPower_Config(void)
     Error_Handler();
   }
 /* USER CODE BEGIN PWR */
+#if 0 == 1
 /* USER CODE END PWR */
 }
 
@@ -172,6 +173,7 @@ void Error_Handler(void)
   while (1)
   {
   }
+  #endif
   /* USER CODE END Error_Handler_Debug */
 }
 

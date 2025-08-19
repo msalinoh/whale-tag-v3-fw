@@ -5,8 +5,36 @@
 #include "main.h"
 
 extern RTC_HandleTypeDef hrtc;
+extern TIM_HandleTypeDef htim4;
+
 
 static int timing_has_synced = 0;
+
+time_t s_timer_start_rtc_epoch_us = 0;
+uint32_t s_timer_start_timer_count_us = 0;
+
+void rtc_init(void) {
+  RTC_DateTypeDef date;
+  RTC_TimeTypeDef time;
+  struct tm datetime;
+  time_t seconds;
+  time_t subseconds_us;
+
+  HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
+  HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
+  datetime.tm_year = date.Year + 100;
+  datetime.tm_mday = date.Date;
+  datetime.tm_mon = date.Month + 1;
+  datetime.tm_hour = time.Hours;
+  datetime.tm_min = time.Minutes;
+  datetime.tm_sec = time.Seconds;
+
+  seconds = mktime(&datetime);
+  subseconds_us = (1000000 * time.SubSeconds) / (time.SecondFraction + 1);
+
+  s_timer_start_rtc_epoch_us = (seconds * 1000000) + subseconds_us;
+  s_timer_start_timer_count_us = __HAL_TIM_GetCounter(&htim4);
+}
 
 time_t rtc_get_epoch_s(void) {
   RTC_DateTypeDef date;
@@ -29,25 +57,12 @@ time_t rtc_get_epoch_s(void) {
 time_t rtc_get_epoch_ms(void) { return rtc_get_epoch_us() / 1000; }
 
 time_t rtc_get_epoch_us(void) {
-  RTC_DateTypeDef date;
-  RTC_TimeTypeDef time;
-  struct tm datetime;
-  time_t seconds;
-  time_t subseconds_us;
+  // use the systemclock for better accuracy
+  return s_timer_start_rtc_epoch_us + (time_t)(__HAL_TIM_GetCounter(&htim4) - s_timer_start_timer_count_us);
+}
 
-  HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
-  HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
-  datetime.tm_year = date.Year + 100;
-  datetime.tm_mday = date.Date;
-  datetime.tm_mon = date.Month + 1;
-  datetime.tm_hour = time.Hours;
-  datetime.tm_min = time.Minutes;
-  datetime.tm_sec = time.Seconds;
-
-  seconds = mktime(&datetime);
-  subseconds_us = (1000000 * time.SubSeconds) / (time.SecondFraction + 1);
-
-  return (seconds * 1000000) + subseconds_us;
+uint32_t timing_get_us_since_on(void) {
+  return (__HAL_TIM_GetCounter(&htim4) - s_timer_start_timer_count_us);
 }
 
 void timing_task(void) {

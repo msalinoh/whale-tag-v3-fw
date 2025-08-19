@@ -10,7 +10,7 @@
 #include "acq_audio.h"
 
 #include "led/led_ctl.h"
-// #include "config.h"
+#include "config.h"
 
 // Middleware
 #include "main.h"
@@ -44,6 +44,7 @@ extern DMA_HandleTypeDef handle_GPDMA1_Channel0;
 extern FX_MEDIA sdio_disk;
 
 static uint8_t s_audio_enabled = 0;
+static uint8_t s_audio_running = 0;
 static uint8_t s_audio_circular_buffer[2][AUDIO_CIRCULAR_BUFFER_SIZE];
 static uint8_t s_circular_write_block = 0;
 
@@ -91,7 +92,11 @@ ad7768_dev audio_adc = {
                                     .dec_rate = AD7768_DEC_X32},
     .channel_mode_select =
         {
+#if AUDIO_CH_0_EN == 1
             .ch[0] = AD7768_MODE_B,
+#else 
+            .ch[0] = AD7768_MODE_A,
+#endif
             .ch[1] = AD7768_MODE_B,
             .ch[2] = AD7768_MODE_B,
             .ch[3] = AD7768_MODE_B,
@@ -156,7 +161,7 @@ void audio_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai) {
 #endif
 }
 
-void acq_audio_enable(void) {
+void acq_audio_init(void) {
   if (s_audio_enabled) {
     // nothing to do
     return;
@@ -200,10 +205,6 @@ void acq_audio_enable(void) {
                            audio_retain_completeCallback);
 #endif
 
-  // initialize transfer
-  HAL_SAI_Receive_DMA(&hsai_BlockA1, s_audio_circular_buffer[0],
-                      2 * AUDIO_CIRCULAR_BUFFER_SIZE);
-
   s_audio_enabled = 1;
 }
 
@@ -225,6 +226,21 @@ void acq_audio_disable(void) {
                     Audio_VN_NEN_GPIO_Output_Pin, GPIO_PIN_SET);
 
   s_audio_enabled = 0;
+}
+
+void acq_audio_start(void) {
+    if(s_audio_running) {
+        return;
+    }
+    // initiate transfers
+    HAL_SAI_Receive_DMA(&hsai_BlockA1, s_audio_circular_buffer[0], 2 * AUDIO_CIRCULAR_BUFFER_SIZE);
+    s_audio_running = 1;
+
+}
+
+void acq_audio_stop(void) {
+    HAL_SAI_DMAStop(&hsai_BlockA1);
+    s_audio_running = 0;
 }
 
 void acq_audio_set_log_callback(AcqAudioLogCallback cb) {

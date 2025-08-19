@@ -88,14 +88,12 @@ int log_audio_raw_write(uint8_t *pData, uint32_t size) {
 }
 #endif
 
-void log_audio_enable(void) {
+void log_audio_init(void) {
     // enable audio acquisition
 #if AUDIO_LOG_TYPE == AUDIO_LOG_RAW
     log_audio_create_raw_file();
     acq_audio_set_log_callback(log_audio_raw_write);
 #endif
-    acq_audio_enable();
-
     s_log_audio_enabled = 1;
 }
 

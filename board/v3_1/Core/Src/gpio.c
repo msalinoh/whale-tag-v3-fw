@@ -67,6 +67,9 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, BURNWIRE_EN_GPIO_Output_Pin|IMU_NCS_GPIO_Output_Pin|AUDIO_NRST_GPIO_Output_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(IMU_PS0_GPIO_Output_GPIO_Port, IMU_PS0_GPIO_Output_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, SAT_NRST_GPIO_Output_Pin|SAT_PM_1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
@@ -104,8 +107,15 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB0 PB1 PB13 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_13;
+  /*Configure GPIO pins : IMU_PS0_GPIO_Output_Pin SAT_NRST_GPIO_Output_Pin SAT_PM_1_Pin */
+  GPIO_InitStruct.Pin = IMU_PS0_GPIO_Output_Pin|SAT_NRST_GPIO_Output_Pin|SAT_PM_1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB1 PB13 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_13;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -130,13 +140,6 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : SAT_NRST_GPIO_Output_Pin SAT_PM_1_Pin */
-  GPIO_InitStruct.Pin = SAT_NRST_GPIO_Output_Pin|SAT_PM_1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
   /*Configure GPIO pins : ECG_NSD_GPIO_Output_Pin ECG_ADC_NRSET_GPIO_Output_Pin IMU_NRESET_GPIO_Output_Pin SAT_RF_NRST_Pin */
   GPIO_InitStruct.Pin = ECG_NSD_GPIO_Output_Pin|ECG_ADC_NRSET_GPIO_Output_Pin|IMU_NRESET_GPIO_Output_Pin|SAT_RF_NRST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -144,10 +147,14 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : IMU_NINT_GPIO_Input_Pin IFACE_EN_GPIO_Input_Pin ECG_LOD_P_GPIO_Input_Pin ECG_LOD_N_GPIO_Input_Pin
-                           SAT_RF_BUSY_GPIO_Input_Pin */
-  GPIO_InitStruct.Pin = IMU_NINT_GPIO_Input_Pin|IFACE_EN_GPIO_Input_Pin|ECG_LOD_P_GPIO_Input_Pin|ECG_LOD_N_GPIO_Input_Pin
-                          |SAT_RF_BUSY_GPIO_Input_Pin;
+  /*Configure GPIO pin : IMU_NINT_GPIO_EXTI10_Pin */
+  GPIO_InitStruct.Pin = IMU_NINT_GPIO_EXTI10_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(IMU_NINT_GPIO_EXTI10_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : IFACE_EN_GPIO_Input_Pin ECG_LOD_P_GPIO_Input_Pin ECG_LOD_N_GPIO_Input_Pin SAT_RF_BUSY_GPIO_Input_Pin */
+  GPIO_InitStruct.Pin = IFACE_EN_GPIO_Input_Pin|ECG_LOD_P_GPIO_Input_Pin|ECG_LOD_N_GPIO_Input_Pin|SAT_RF_BUSY_GPIO_Input_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
@@ -203,6 +210,9 @@ void MX_GPIO_Init(void)
 
   HAL_NVIC_SetPriority(EXTI9_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI9_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI10_IRQn);
 
 }
 

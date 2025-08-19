@@ -22,7 +22,9 @@ typedef struct {
     uint16_t protection_alert;
 } CetiBatterySample;
 
-void acq_battery_enable(void);
+void acq_battery_init(void);
+void acq_battery_start(void);
+void acq_battery_stop(void);
 const CetiBatterySample* acq_battery_get_next_sample(void);
 void acq_pressure_get_next_buffer_range(uint8_t **ppBuffer, size_t *pSize);
 void acq_battery_peak_latest_sample(CetiBatterySample *pSample);

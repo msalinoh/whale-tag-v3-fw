@@ -21,12 +21,13 @@ static uint16_t s_acq_pressure_write_position = 0;
 static uint16_t s_acq_pressure_latest_position = 0;
 static uint16_t s_acq_pressure_read_position = 0;
 
+// TIM3-> <request measurement> -> <EOC EXTI> -> <read measurement start> -> <read measurement complete interrupt>
+
 void acq_pressure_EXTI_cb(void) {
     CetiPressureSample * p_sample = &pressure_sample_buffer[s_acq_pressure_write_position];
     p_sample->timestamp_us = rtc_get_epoch_us();
-    int result = keller4ld_read_measurement(&p_sample->data);
-    
-    // ToDo: Errory handle
+    int result = keller4ld_read_measurement_it(&p_sample->data);
+
     s_acq_pressure_latest_position = s_acq_pressure_write_position;
     s_acq_pressure_write_position = (s_acq_pressure_write_position + 1) % ACQ_PRESSURE_BUFFER_SIZE;
     if (s_acq_pressure_write_position == s_acq_pressure_read_position) {
@@ -35,7 +36,7 @@ void acq_pressure_EXTI_cb(void) {
 }
 
 static void __acq_pressure_timer_complete_cb(TIM_HandleTypeDef *htim) {
-	int result = keller4ld_request_measurement();
+	int result = keller4ld_request_measurement_it();
 }
 
 // Note: this method is currently kinda unsafe since the buffer could be overwritten once pointer is returned
@@ -73,17 +74,27 @@ void acq_pressure_peak_latest_sample(CetiPressureSample *pSample) {
     return;
 }
 
-void acq_pressure_enable(void) {
+void acq_pressure_init(void) {
     // configure timer to 1 second
     MX_TIM3_Init();
+
+    // setup timer callback
     HAL_TIM_RegisterCallback(&PRESSURE_htim, HAL_TIM_PERIOD_ELAPSED_CB_ID, __acq_pressure_timer_complete_cb);
-    HAL_TIM_Base_Start_IT(&PRESSURE_htim);
     return;
 }
 
-void acq_pressure_disable(void) {
+void acq_pressure_start(void) {
+    HAL_TIM_Base_Start_IT(&PRESSURE_htim);
+}
+
+void acq_pressure_stop(void) {
     HAL_TIM_Base_Stop_IT(&PRESSURE_htim);
-     HAL_TIM_UnRegisterCallback(&PRESSURE_htim, HAL_TIM_PERIOD_ELAPSED_CB_ID);
+}
+
+void acq_pressure_disable(void) {
+    acq_pressure_stop();
+    HAL_TIM_UnRegisterCallback(&PRESSURE_htim, HAL_TIM_PERIOD_ELAPSED_CB_ID);
+    HAL_TIM_Base_DeInit(&PRESSURE_htim);
 }
 
 void acq_pressure_flush(void) {

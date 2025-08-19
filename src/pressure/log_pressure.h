@@ -10,7 +10,7 @@
 
 #include "acq_pressure.h"
 
-void log_pressure_enable(void);
+void log_pressure_init(void);
 void log_pressure_disable(void);
 
 void log_pressure_task(void);

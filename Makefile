@@ -141,6 +141,11 @@ $(ALL_DIRS):
 $(BUILD_DIR)/%.s.o : %.s | $(ASM_BUILD_DIRS)
 	$(call print2,Assembling:,$<,$@)
 	@$(CC) -x assembler-with-cpp -c $(CFLAGS) $< -o $@
+	
+#main.c -> main.o
+$(BUILD_DIR)/%/main.c.o : %/main.c src/config.h | $(C_BUILD_DIRS)
+	$(call print2,Compiling:,$<,$@)
+	@$(CC) -c $(CFLAGS) $< -o $@ 
 
 # .c -> .o
 $(BUILD_DIR)/%.c.o : %.c | $(C_BUILD_DIRS)

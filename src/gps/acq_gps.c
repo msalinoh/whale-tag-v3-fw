@@ -14,7 +14,7 @@ typedef enum {
 extern UART_HandleTypeDef GPS_huart;
 
 uint8_t max10s_rx_buffer[2][16*NMEA_MAX_SIZE];
-void acq_gps_RxCpltCallback(struct UART_HandleTypeDef *huart) {
+void acq_gps_RxCpltCallback(UART_HandleTypeDef *huart) {
     __NOP();
 }
 

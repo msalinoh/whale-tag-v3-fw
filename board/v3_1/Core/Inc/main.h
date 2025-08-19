@@ -87,6 +87,8 @@ void Error_Handler(void);
 #define AUDIO_SPI1_MISO_GPIO_Port GPIOA
 #define AUDIO_SPI1_MOSI_Pin GPIO_PIN_7
 #define AUDIO_SPI1_MOSI_GPIO_Port GPIOA
+#define IMU_PS0_GPIO_Output_Pin GPIO_PIN_0
+#define IMU_PS0_GPIO_Output_GPIO_Port GPIOB
 #define ECG_ADC_NDRDY_GPIO_Input_Pin GPIO_PIN_2
 #define ECG_ADC_NDRDY_GPIO_Input_GPIO_Port GPIOB
 #define ECG_ADC_NDRDY_GPIO_Input_EXTI_IRQn EXTI2_IRQn
@@ -110,8 +112,9 @@ void Error_Handler(void);
 #define ECG_NSD_GPIO_Output_GPIO_Port GPIOD
 #define ECG_ADC_NRSET_GPIO_Output_Pin GPIO_PIN_9
 #define ECG_ADC_NRSET_GPIO_Output_GPIO_Port GPIOD
-#define IMU_NINT_GPIO_Input_Pin GPIO_PIN_10
-#define IMU_NINT_GPIO_Input_GPIO_Port GPIOD
+#define IMU_NINT_GPIO_EXTI10_Pin GPIO_PIN_10
+#define IMU_NINT_GPIO_EXTI10_GPIO_Port GPIOD
+#define IMU_NINT_GPIO_EXTI10_EXTI_IRQn EXTI10_IRQn
 #define IMU_NRESET_GPIO_Output_Pin GPIO_PIN_11
 #define IMU_NRESET_GPIO_Output_GPIO_Port GPIOD
 #define IFACE_EN_GPIO_Input_Pin GPIO_PIN_12
@@ -157,6 +160,8 @@ void Error_Handler(void);
 
 #define BATTERY_htim htim2
 #define PRESSURE_htim htim3
+#define uS_htim htim4
+//#define FLASHER_htim htim5
 
 #define GPS_huart huart1
 

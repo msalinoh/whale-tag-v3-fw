@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include "main.h"
+
 #define SYSLOG_FILENAME "syslog.log"
 
 extern RTC_HandleTypeDef hrtc;

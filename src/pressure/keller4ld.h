@@ -14,9 +14,6 @@
 
 #include <stdint.h>
 
-
-
-
 // Keller 4LD Pressure Sensor 200 bar
 // Reference pressure is a 1 bar abs
 #define PRESSURE_MIN 0   // bar
@@ -33,8 +30,8 @@ typedef struct {
     uint16_t temperature;
 } Keller4LD_Measurement;
 
-HAL_StatusTypeDef keller4ld_request_measurement(void);
+HAL_StatusTypeDef keller4ld_request_measurement_it(void);
 HAL_StatusTypeDef keller4ld_read_status(uint8_t *pStatus);
-HAL_StatusTypeDef keller4ld_read_measurement(Keller4LD_Measurement *pData);
+HAL_StatusTypeDef keller4ld_read_measurement_it(Keller4LD_Measurement *pData);
 
 #endif // __CETI_WHALE_TAG_HAL_KELLER_4LD__

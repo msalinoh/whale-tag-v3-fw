@@ -30,18 +30,14 @@ uint8_t log_pressure_encode_buffer[LOG_PRESSURE_ENCODE_BUFFER_SIZE];
 extern FX_MEDIA sdio_disk;
 FX_FILE pressure_file = {};
 
-#if LOG_PRESSURE_FORMAT == PRESSURE_FORMAT_BIN
-#define PRESSURE_FILENAME "data_pressure.bin"
-#elif LOG_PRESSURE_FORMAT == PRESSURE_FORMAT_CSV
 #define PRESSURE_FILENAME "data_pressure.csv"
-const static char *log_battery_csv_header = 
+static char *log_pressure_csv_header =
     "Timestamp [us]"
     ", Notes"
     ", Pressure [bar]"
     ", Temperature [C]"
     "\n"
 ;
-#endif
 
 static void log_pressure_open_file(void) {
     /* Create/open presure file */
@@ -49,7 +45,7 @@ static void log_pressure_open_file(void) {
     fx_result = fx_file_create(&sdio_disk, PRESSURE_FILENAME);
     int is_new_file = 0;
     if ((fx_result != FX_SUCCESS) && (fx_result != FX_ALREADY_CREATED)) {
-        Error_Handler();
+        // Error_Handler();
     } else if ((fx_result != FX_ALREADY_CREATED)) {
         is_new_file = 1;
         CETI_LOG("Created new pressure file \"%s\"", PRESSURE_FILENAME);
@@ -57,23 +53,20 @@ static void log_pressure_open_file(void) {
     
     fx_result = fx_file_open(&sdio_disk, &pressure_file, PRESSURE_FILENAME, FX_OPEN_FOR_WRITE);
     if (fx_result != FX_SUCCESS) {
-        Error_Handler();
+        // Error_Handler();
     }
     CETI_LOG("Opened pressure file \"%s\"", PRESSURE_FILENAME);
 
     if (!is_new_file) {
         return;
     }
-#if LOG_PRESSURE_FORMAT == PRESSURE_FORMAT_CSV
-    
-    fx_result = fx_file_write(&pressure_file, (void *)log_battery_csv_header, strlen(log_battery_csv_header));
+
+    fx_result = fx_file_write(&pressure_file, log_pressure_csv_header, strlen(log_pressure_csv_header));
     if (fx_result != FX_SUCCESS) {
         // ToDo: error handling
     }
-#endif //LOG_PRESSURE_FORMAT == PRESSURE_FORMAT_CSV
 }
 
-#if LOG_PRESSURE_FORMAT == PRESSURE_FORMAT_CSV
 static size_t log_pressure_sample_to_csv(const CetiPressureSample* pSample, uint8_t * pBuffer, size_t buffer_len) {  
     uint8_t offset = 0;
     offset += snprintf((char *)&pBuffer[offset], buffer_len - offset, "%lld", pSample->timestamp_us);
@@ -87,38 +80,13 @@ static size_t log_pressure_sample_to_csv(const CetiPressureSample* pSample, uint
     offset += snprintf((char *)&pBuffer[offset], buffer_len - offset, "\n");
     return offset;  
 }
-#endif //LOG_PRESSURE_FORMAT == PRESSURE_FORMAT_CSV
 
-void log_pressure_enable(void) {
-    // create pressure file
+void log_pressure_init(void) {
+    // create pressure files
     log_pressure_open_file();
-
-    // start data acquisition
-    acq_pressure_enable();
-}
-
-
-void log_pressure_disable(void) {
-    // ToDo: stop pressure acquisition
-    // ToDo: flush partial data to SD card
-    // ToDo: close pressure file
 }
 
 void log_pressure_task(void) {
-    
-    #if LOG_PRESSURE_FORMAT == PRESSURE_FORMAT_BIN
-    uint8_t* pBuffer = NULL;
-    size_t pSize = 0;
-    acq_pressure_get_next_buffer_range(&pBuffer, &pSize);
-    while (pSize != 0) {
-        // Flush buffer to SD card
-        UINT fx_result = fx_file_write(&log_battery_file, pBuffer, pSize);
-        if (fx_result != FX_SUCCESS) {
-            //  ToDo: Handle Errors
-        }
-        acq_pressure_get_next_buffer_range(&pBuffer, &pSize);
-    }
-    #elif LOG_PRESSURE_FORMAT == PRESSURE_FORMAT_CSV
     size_t encoded_bytes = 0;
     const CetiPressureSample* pSample = acq_pressure_get_next_sample();
     while (pSample != NULL) {
@@ -143,5 +111,4 @@ void log_pressure_task(void) {
             //  ToDo: Handle Errors
         }
     }
-    #endif
 }

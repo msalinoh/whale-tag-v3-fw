@@ -5,9 +5,11 @@
 //-----------------------------------------------------------------------------
 
 #include "mission.h"
+#include "config.h"
 
 #include "audio/log_audio.h"
 #include "battery/log_battery.h"
+#include "imu/acq_imu.h"
 #include "pressure/log_pressure.h"
 #include "main.h"
 
@@ -19,11 +21,22 @@ static MissionState s_state = MISSION_STATE_ERROR;
 
 typedef void (*MissionTask)(void); 
 MissionTask mission_surface_tasks[] = {
+#ifdef BMS_ENABLED
 	log_battery_task,
+#endif
+#ifdef PRESSURE_ENABLED
 	log_pressure_task,
-	// log_gps_task,
+#endif
+#ifdef IMU_ENABLED
 	// log_imu_task,
+	acq_imu_task,
+#endif
+#ifdef ECG_ENABLED
 	// log_ecg_task,
+#endif
+#ifdef GPS_ENABLED
+	// log_gps_task,
+#endif
 	// log_syslog_task,
 };
 
@@ -63,6 +76,7 @@ void mission_set_state(MissionState next_state) {
 void mission_task(void) {
 	switch (s_state) {
 		case MISSION_STATE_SURFACE: {
+#ifdef AUDIO_ENABLED
 			/* sleep until an interrupt says there's something to do */ 
 			// ToDo: disable unused clocks
 			HAL_SuspendTick();
@@ -74,14 +88,20 @@ void mission_task(void) {
 			__enable_irq();
 			// ToDo: reenable clocks
 			HAL_ResumeTick();
-
+#endif
 			/* tasks to execute on wake */
 			for (int i = 0; i < sizeof(mission_surface_tasks)/sizeof(mission_surface_tasks[0]); i++){
+#ifdef AUDIO_ENABLED
 				log_audio_task(); // always check if audio needs to be logged
+#endif
 				mission_surface_tasks[i](); // perform an additional task
 			}
+#ifdef AUDIO_ENABLED
+			log_audio_task(); // always check if audio needs to be logged
+#endif
 
 			/* update state machine */
+#ifdef BMS_ENABLED
 			CetiBatterySample battery_sample;
 			acq_battery_peak_latest_sample(&battery_sample);
 			if( (battery_sample.cell_voltage_v[0] <= MISSION_BURN_THRESHOLD_CELL_V) 
@@ -89,13 +109,16 @@ void mission_task(void) {
 			){
 				mission_set_state(MISSION_STATE_BURN);
 			}
+#endif // BMS_ENABLED
 
+#ifdef PRESSURE_ENABLED
 			CetiPressureSample pressure_sample;
 			acq_pressure_peak_latest_sample(&pressure_sample);
 			if(pressure_sample.data.pressure >= KELLER4LD_PRESSURE_BAR_TO_RAW(MISSION_DIVE_THRESHOLD_BAR)) {
 				mission_set_state(MISSION_STATE_DIVE);
 				break;
 			}
+#endif // PRESSURE_ENABLED
 		}
 		break;
 

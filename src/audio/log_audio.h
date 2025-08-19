@@ -8,7 +8,7 @@
 #ifndef CETI_LOG_AUDIO_H
 #define CETI_LOG_AUDIO_H
 
-void log_audio_enable(void);
+void log_audio_init(void);
 void log_audio_task(void);
 
 #endif // CETI_LOG_AUDIO_H

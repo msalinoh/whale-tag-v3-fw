@@ -8,4 +8,9 @@
 #ifndef CETI_ACQ_IMU_H
 #define CETI_ACQ_IMU_H
 
+void acq_imu_init(void);
+void acq_imu_start(void);
+void acq_imu_task(void);
+void acq_imu_EXTI_Callback(void);
+
 #endif // CETI_ACQ_IMU_H

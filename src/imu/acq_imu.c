@@ -4,9 +4,11 @@
  *   @project   Project CETI
  *   @copyright Harvard University Wood Lab
  *   @authors   Michael Salino-Hugg, [TODO: Add other contributors here]
+ *   @note      based on example from https://github.com/ceva-dsp/sh2-demo-nucleo
  *****************************************************************************/
 #include "sh2.h"
 #include "sh2_err.h"
+#include "sh2_sensorValue.h"
 
 #include "main.h"
 #include "spi.h"
@@ -20,8 +22,7 @@
 static uint8_t txBuf[SH2_HAL_MAX_TRANSFER_OUT];
 static uint8_t rxBuf[SH2_HAL_MAX_TRANSFER_IN];
 
-#define imu_ncs(value) HAL_GPIO_WritePin(IMU_NCS_GPIO_Output_GPIO_Port, IMU_NCS_GPIO_Output_Pin, (value))
-
+static uint32_t acq_imu_get_time_us(sh2_Hal_t *self);
 static void acq_imu_spi_close(sh2_Hal_t *self);
 static int acq_imu_spi_open(sh2_Hal_t *self);
 static int acq_imu_spi_hal_read(sh2_Hal_t *self, uint8_t *pBuffer, unsigned len, uint32_t *t);
@@ -36,30 +37,51 @@ typedef enum {
     SPI_WRITE
 } SpiState;
 
+static int inReset = 1;
 static int s_spi_is_open = 0;
-static volatile time_t s_rx_timestamp_us;
+static volatile uint32_t s_rx_timestamp_us;
 static volatile uint32_t s_rx_buf_len;
 static volatile uint32_t s_tx_buf_len;
 static volatile int s_rx_ready;
 static volatile SpiState s_spi_state = SPI_INIT;
 static sh2_Hal_t bno08x = {
+        .getTimeUs = acq_imu_get_time_us,
         .close = acq_imu_spi_close,
         .open = acq_imu_spi_open,
         .read = acq_imu_spi_hal_read,
         .write = acq_imu_spi_hal_write,
 };
 
+/*******************************************************************************
+ * SPI HW Control Methods
+ */
+static void csn(GPIO_PinState state) {
+    HAL_GPIO_WritePin(IMU_NCS_GPIO_Output_GPIO_Port, IMU_NCS_GPIO_Output_Pin, state);
+}
+ 
+static void ps0_waken(GPIO_PinState state) {
+    HAL_GPIO_WritePin(IMU_PS0_GPIO_Output_GPIO_Port, IMU_PS0_GPIO_Output_Pin, state);
+}
+
+static void rstn(GPIO_PinState state) {
+    HAL_GPIO_WritePin(IMU_NRESET_GPIO_Output_GPIO_Port, IMU_NRESET_GPIO_Output_Pin, state);
+}
+
+/*******************************************************************************
+ * SPI Interrupt Callback Methods
+ */
+
 static void acq_imu_start_spi_transfer(void) {
     if (!((s_spi_state == SPI_IDLE) && (s_rx_buf_len == 0) && s_rx_ready)) {
         return; // spi is busy
     }
     s_rx_ready = 0;
-    imu_ncs(GPIO_PIN_RESET); 
+    csn(GPIO_PIN_RESET); 
     if (s_tx_buf_len > 0) {
         s_spi_state = SPI_WRITE;
         HAL_SPI_TransmitReceive_IT(&IMU_hspi, txBuf, rxBuf, s_tx_buf_len);
         // Deassert Wake
-        // ps0_waken(true);
+        ps0_waken(GPIO_PIN_SET);
     } else {
         s_spi_state = SPI_RD_HDR;
         HAL_SPI_Receive_IT(&IMU_hspi, rxBuf, BNO08X_HDR_LEN);
@@ -85,14 +107,14 @@ void acq_imu_spi_complete_callback(void) {
             } 
             __attribute__ ((fallthrough));
         case SPI_RD_BODY:
-            imu_ncs(GPIO_PIN_SET);
+            csn(GPIO_PIN_SET);
             s_rx_buf_len = 0;
             s_spi_state = SPI_IDLE;
             acq_imu_start_spi_transfer();
             break;           
         
         case SPI_WRITE:
-            imu_ncs(GPIO_PIN_SET);
+            csn(GPIO_PIN_SET);
             s_rx_buf_len = (s_tx_buf_len < rxLen) ? s_tx_buf_len : rxLen;
             s_tx_buf_len = 0;
             s_spi_state = SPI_IDLE;
@@ -106,38 +128,85 @@ void acq_imu_spi_complete_callback(void) {
 }
 
 void acq_imu_EXTI_Callback(void) {
-    s_rx_timestamp_us = 
-    // ToDo: store timeStamp
-    // inReset = 0;
+    s_rx_timestamp_us = timing_get_us_since_on();
+    inReset = 0;
     s_rx_ready = 1;
     acq_imu_start_spi_transfer();
 }
 
-void acq_imu_disable_interrupts(void) {
-    // HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef * hspi) {
+    acq_imu_spi_complete_callback();
+}
+
+static void acq_imu_disable_interrupts(void) {
+    HAL_NVIC_DisableIRQ(IMU_NINT_GPIO_EXTI10_EXTI_IRQn);
     HAL_NVIC_DisableIRQ(SPI1_IRQn);
 }
 
-void acq_imu_enable_interrupts(void) {
-    // HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+static void acq_imu_enable_interrupts(void) {
+    HAL_NVIC_EnableIRQ(IMU_NINT_GPIO_EXTI10_EXTI_IRQn);
     HAL_NVIC_EnableIRQ(SPI1_IRQn);
 }
 
+/*******************************************************************************
+ * SH2 SPI HAL Methods
+ */
+
+static uint32_t acq_imu_get_time_us(sh2_Hal_t *self) {
+    return timing_get_us_since_on();
+}
+
 static int acq_imu_spi_open(sh2_Hal_t *self) {
-    MX_SPI1_Init();
     if (s_spi_is_open) {
         return SH2_ERR; // can't open another instance
     }
     s_spi_is_open = 1;
     
-
+    
     // initialize spi hardware
-    imu_ncs(GPIO_PIN_SET);
+    MX_SPI1_Init();
+
+    // hold in reset
+    rstn(GPIO_PIN_RESET);
+
+    // deassert CSN
+    csn(GPIO_PIN_SET);
+
+    s_rx_buf_len = 0;
+    s_tx_buf_len = 0;
+    s_rx_ready = 0;
+
+    inReset = 1;
+
+    /* Transmit dummy packet to establish SPI connection*/
+    s_spi_state = SPI_DUMMY;
+    const uint8_t dummyTx[1] = {0xAA};
+    HAL_SPI_Transmit(&IMU_hspi, dummyTx, sizeof(dummyTx), 2);
+    s_spi_state = SPI_IDLE;
+
+    HAL_Delay(10);
+
+    ps0_waken(GPIO_PIN_SET);
+    rstn(GPIO_PIN_SET);
+    
+    acq_imu_enable_interrupts();
+
+    HAL_Delay(2000);
+
     return SH2_OK;
 }
 
 static void acq_imu_spi_close(sh2_Hal_t *self) {
+    acq_imu_disable_interrupts();
+
+    s_spi_state = SPI_INIT;
+
+    rstn(GPIO_PIN_RESET);
+
+    csn(GPIO_PIN_SET);
+
     HAL_SPI_DeInit(&IMU_hspi);
+
     s_spi_is_open = 0;
     return;
 }
@@ -155,9 +224,9 @@ static int acq_imu_spi_hal_read(sh2_Hal_t *self, uint8_t *pBuffer, unsigned len,
         s_rx_buf_len = 0;
         // Now that rxBuf is empty, activate SPI processing to send any
         // potential write that was blocked.
-        // disableInts();
+        acq_imu_disable_interrupts();
         acq_imu_start_spi_transfer();
-        // enableInts();
+        acq_imu_enable_interrupts();
         return SH2_ERR_BAD_PARAM;
     }
 
@@ -175,9 +244,9 @@ static int acq_imu_spi_hal_read(sh2_Hal_t *self, uint8_t *pBuffer, unsigned len,
 
     // Now that rxBuf is empty, activate SPI processing to send any
     // potential write that was blocked.
-    // disableInts();
+    acq_imu_disable_interrupts();
     acq_imu_start_spi_transfer();
-    // enableInts();
+    acq_imu_enable_interrupts();
     
 
     return retval;
@@ -204,21 +273,87 @@ static int acq_imu_spi_hal_write(sh2_Hal_t *self, uint8_t *pBuffer, unsigned len
     retval = len;
 
     // // disable SH2 interrupts for a moment
-    // disableInts();
+    acq_imu_disable_interrupts();
 
     // // Assert Wake
-    // ps0_waken(false);
+    ps0_waken(GPIO_PIN_RESET);
 
     // // re-enable SH2 interrupts.
-    // enableInts();
+    acq_imu_enable_interrupts();
 
     return retval;
 }
 
-void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef * hspi) {
-    acq_imu_spi_complete_callback();
+
+/*******************************************************************************
+ * High-level sensor control
+ */
+#define ACQ_IMU_SENSOR_BUFFER_LENGTH (8 * 1000)
+sh2_SensorValue_t s_acq_imu_sensor_value_buffer[ACQ_IMU_SENSOR_BUFFER_LENGTH];
+static volatile size_t s_acq_imu_sensor_write_position = 0;
+static volatile size_t s_acq_imu_sensor_read_position = 0;
+
+void acq_imu_sensor_callback(void *cookie, sh2_SensorEvent_t *pEvent) {
+    int status;
+
+    // ToDo: decode based on event type
+
+    // decode event into buffer
+    status = sh2_decodeSensorEvent(&s_acq_imu_sensor_value_buffer[s_acq_imu_sensor_write_position], pEvent);
+    if (status != SH2_OK) {
+        return; // unable to decode report
+    }
+    size_t next_pos = (s_acq_imu_sensor_write_position + 1) % ACQ_IMU_SENSOR_BUFFER_LENGTH;
+    if (next_pos == s_acq_imu_sensor_read_position) {
+        // ToDo: Handle overflow
+    }
+    s_acq_imu_sensor_write_position = next_pos;
+
 }
 
+const struct {
+    int sensor_id;
+    sh2_SensorConfig_t config;
+} s_sensor_config[] = {
+    {SH2_ACCELEROMETER, {.reportInterval_us = 20000}},
+    {SH2_GYROSCOPE_CALIBRATED, {.reportInterval_us = 20000} },
+    {SH2_MAGNETIC_FIELD_CALIBRATED, {.reportInterval_us = 20000}},
+    {SH2_ROTATION_VECTOR, {.reportInterval_us = 20000}},
+};
+
+const sh2_Quaternion_t s_imu_reorientation_quat = {
+    .x = 0.0,
+    .y = 0.0,
+    .z = 0.0,
+    .w = 0.0,
+};
+
+
 void acq_imu_init(void) {
-    sh2_open(&bno08x, NULL, NULL);
+    int status = sh2_open(&bno08x, NULL, NULL);
+    if (status != SH2_OK) {
+        //ToDo: sh2 error handling
+    }
+    sh2_setSensorCallback(acq_imu_sensor_callback, NULL);
+
+    // ToDo: get product id to verify sensor
+
+    // ToDo: configure IMU orientation to tag frame
+    // sh2_setReorientation(&s_imu_reorientation_quat);
+
+    // ToDo: configure report batching
+}
+
+void acq_imu_start(void) {
+    for (int i = 0; i < sizeof(s_sensor_config)/ sizeof(s_sensor_config[0]); i++) {
+        int status = sh2_setSensorConfig(s_sensor_config[i].sensor_id, &s_sensor_config[i].config);
+        if (status != 0) {
+            // ToDo: report error
+        }
+    }
+}
+
+void acq_imu_task(void) {
+    // process events
+    sh2_service();
 }

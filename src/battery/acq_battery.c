@@ -100,9 +100,16 @@ void acq_battery_peak_latest_sample(CetiBatterySample *pSample) {
  * @brief starts data acquisition of battery samples on 1 second interval
  * 
  */
-void acq_battery_enable(void) {
+void acq_battery_init(void) {
     //Note: consider not using MX_TIM2 generated code to move easily swap timers 
     MX_TIM2_Init();
     HAL_TIM_RegisterCallback(&BATTERY_htim, HAL_TIM_PERIOD_ELAPSED_CB_ID, __acq_battery_timer_complete_cb);
+}
+
+void acq_battery_start(void) {
     HAL_TIM_Base_Start_IT(&BATTERY_htim);
+}
+
+void acq_battery_stop(void) {
+    HAL_TIM_Base_Stop_IT(&BATTERY_htim);
 }

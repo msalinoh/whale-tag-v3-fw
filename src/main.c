@@ -21,16 +21,22 @@
 #include "tusb.h"
 
 /* Local Includes */
+#include "config.h"
+#include "audio/acq_audio.h"
 #include "audio/log_audio.h"
+#include "battery/acq_battery.h"
 #include "battery/log_battery.h"
 #include "battery/bms_ctl.h"
 #include "ecg/acq_ecg.h"
+#include "imu/acq_imu.h"
 #include "led/led_ctl.h"
 #include "mission.h"
+#include "pressure/acq_pressure.h"
 #include "pressure/log_pressure.h"
 #include "timing.h"
 #include "usb/usb.h"
 #include "version.h"
+#include "version_hw.h"
 
 #include "log/log_syslog.h"
 
@@ -71,9 +77,11 @@ int bms_ctl_program_nonvolatile_memory(void);
 void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
 {
 	switch(GPIO_Pin) {
-		case KELLER_DRDY_EXTI9_Pin: // 9
+#ifdef PRESSURE_ENABLED
+		case KELLER_DRDY_EXTI9_Pin:
 			acq_pressure_EXTI_cb();
 			break;
+#endif // PRESSURE_ENABLED
 		default:
 			__NOP();
 			break;
@@ -83,13 +91,17 @@ void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
 void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 {
 	switch(GPIO_Pin) {
+#ifdef ECG_ENABLE
 		case ECG_ADC_NDRDY_GPIO_Input_Pin: // 2
 			acq_ecg_EXTI_Callback();
 			break;
-		case IMU_NINT_GPIO_Input_Pin: //10
+#endif // ECG_ENABLED
+#ifdef IMU_ENABLED
+		case IMU_NINT_GPIO_EXTI10_Pin: //10
             acq_imu_EXTI_Callback();
 			// ToDo: implement IMU data ready interrupt
 			break;
+#endif // IMU_ENABLED
 		default:
 			__NOP();
 			break;
@@ -103,26 +115,33 @@ int main(void) {
 
     /* Initialize all configured peripherals */
     MX_GPIO_Init();
+    MX_I2C3_Init(); // BMS / LEDs
+    led_init();
+    led_idle();
+
     MX_GPDMA1_Init();
     MX_ICACHE_Init();
 
+    /* setup timing for accurate uS timing*/
     MX_RTC_Init();
-    
+    MX_TIM4_Init();
+    rtc_init();
+
     MX_I2C1_Init(); // pressure sensor
-    MX_I2C3_Init(); // BMS / LEDs
     
-    led_init();
-    led_idle();
         
     /* open SD card for system logging */
     MX_SDMMC1_SD_Init();
     MX_FileX_Init();
-        int filex_status = fx_media_open(&sdio_disk, "", fx_stm32_sd_driver, (VOID *)FX_NULL, (VOID *) fx_sd_media_memory, sizeof(fx_sd_media_memory));
-        if(filex_status == FX_SUCCESS) {
+    int filex_status = fx_media_open(&sdio_disk, "", fx_stm32_sd_driver, (VOID *)FX_NULL, (VOID *) fx_sd_media_memory, sizeof(fx_sd_media_memory));
+    if(filex_status == FX_SUCCESS) {
         syslog_init();
         CETI_LOG("Program started!");
+    } else {
+        led_error();
     }
     
+#ifdef BMS_ENABLED
     /* basic BMS validation */
     int bms_settings_verified = bms_ctl_verify();
     if (!bms_settings_verified) {
@@ -132,7 +151,9 @@ int main(void) {
         bms_ctl_temporary_overwrite_nv_values();
     }
     bms_ctl_reset_FETs(); // enable charging and discharging
-    
+#endif // BMS_ENABLED
+
+#ifdef USB_ENABLED
     /* Detect if the external interface is present to enable USB for offload/debug/DFU */
     if (usb_iface_present()) {
         CETI_LOG("Key detected. Starting USB Device Interface");
@@ -180,38 +201,78 @@ int main(void) {
         /* reboot system to return to capture state once key is removed */
         NVIC_SystemReset();
     }
+#endif // USB_ENABLED
       
-    /* perform runtime system hardware test to detect available systems */
-    CETI_LOG("Initializing BMS");
-    log_battery_enable();
-      
+#ifdef AUDIO_ENABLED
     /* enable Audio -5V */
     CETI_LOG("Initializing Audio");
-    log_audio_enable();
-    led_heartbeat();
-    
+    acq_audio_init();
+    log_audio_init();
+#endif // AUDIO_ENABLED
+
+    /* perform runtime system hardware test to detect available systems */
+#ifdef BMS_ENABLED
+    CETI_LOG("Initializing BMS");
+    acq_battery_init();
+    log_battery_enable();
+#endif // BMS_ENABLED
+
+
+#ifdef PRESSURE_ENABLED
     CETI_LOG("Initializing Pressure");
-    // GPS pulls entire bus low if not powered
+#if HW_VERSION == HW_VERSION_3_1_0
+    // Note: on this version of the tag, GPS must be powered to prevent the
+    // shared i2c bus from being pulled low.
     HAL_GPIO_WritePin(GPS_PWR_EN_GPIO_Output_GPIO_Port, GPS_PWR_EN_GPIO_Output_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(GPS_NRST_GPIO_Output_GPIO_Port, GPS_NRST_GPIO_Output_Pin, GPIO_PIN_SET);
-    log_pressure_enable();
+#endif
+    acq_pressure_init();
+    log_pressure_init();
+#endif // PRESSURE_ENABLED
 
+#ifdef IMU_ENABLED
     CETI_LOG("Initializing IMU");
+    acq_imu_init();
+#endif // IMU_ENABLED
 
+#ifdef ECG_ENABLED
     CETI_LOG("Initializing ECG");
     MX_I2C2_Init(); // ECG ADC
-    // acq_ecg_enable();
+    acq_ecg_enable();
+#endif // ECG_ENABLED
 
+#ifdef GPS_ENABLED
     CETI_LOG("Initializing GPS");
     // acq_gps_enable();
+#endif // GPS_ENABLED
 
+#ifdef SATELLITE_ENABLDED
     CETI_LOG("Initializing ARGOS");
+#endif // SATELLITE_ENABLED
 
     CETI_LOG("Enabling Antenna Flasher");
 
-
-
     mission_set_state(MISSION_STATE_SURFACE);
+
+
+/* BEGIN ACQUISITION */
+#ifdef BMS_ENABLED
+    acq_battery_start();
+#endif
+
+#ifdef PRESSURE_ENABLED
+    acq_pressure_start();
+#endif
+
+#ifdef IMU_ENABLED
+    acq_imu_start();
+#endif //IMU_ENABLED
+
+#ifdef AUDIO_ENABLED
+    acq_audio_start();
+    led_heartbeat();
+#endif // AUDIO_ENABLED
+
     while(1){
         mission_task();
     }
@@ -251,4 +312,18 @@ void tud_suspend_cb(bool remote_wakeup_en)
 void tud_resume_cb(void)
 {
 //  blink_interval_ms = tud_mounted() ? BLINK_MOUNTED : BLINK_NOT_MOUNTED;
+}
+
+
+// Generic Error Catcher; 
+void Error_Handler(void)
+{
+  /* USER CODE BEGIN Error_Handler_Debug */
+  /* User can add his own implementation to report the HAL error return state */
+  __disable_irq();
+  while (1)
+  {
+    led_error();
+  }
+  /* USER CODE END Error_Handler_Debug */
 }

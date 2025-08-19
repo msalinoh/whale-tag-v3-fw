@@ -234,9 +234,6 @@ int log_battery_sample_to_csv(const CetiBatterySample * pSample, uint8_t *pBuffe
 void log_battery_enable(void) {
     // ToDo: create file for battery data
     log_battery_open_csv_file();
-
-    /* start battery acquisition */
-    acq_battery_enable();
 }
 
 void log_battery_task(void) {
