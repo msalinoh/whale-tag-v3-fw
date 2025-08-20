@@ -91,7 +91,7 @@ static void acq_imu_start_spi_transfer(void) {
 
 void acq_imu_spi_complete_callback(void) {
     // Get length of payload avaiable
-    uint16_t rxLen = (rxBuf[1] & ~0x80) << 8 | rxBuf[0];
+    uint16_t rxLen = ((uint16_t)(rxBuf[1] & ~0x80) << 8) | (uint16_t)rxBuf[0];
 
     rxLen = (rxLen > sizeof(rxBuf)) ? sizeof(rxBuf) : rxLen;
     switch (s_spi_state) {
@@ -102,13 +102,18 @@ void acq_imu_spi_complete_callback(void) {
         case SPI_RD_HDR:
             if (rxLen > BNO08X_HDR_LEN) {
                 s_spi_state = SPI_RD_BODY;
-                HAL_SPI_Receive_IT(&IMU_hspi, rxBuf, rxLen - BNO08X_HDR_LEN);
+                HAL_SPI_Receive_IT(&IMU_hspi, rxBuf + BNO08X_HDR_LEN, rxLen - BNO08X_HDR_LEN);
                 break;
             } 
-            __attribute__ ((fallthrough));
-        case SPI_RD_BODY:
             csn(GPIO_PIN_SET);
             s_rx_buf_len = 0;
+            s_spi_state = SPI_IDLE;
+            acq_imu_start_spi_transfer();
+            break;
+
+        case SPI_RD_BODY:
+            csn(GPIO_PIN_SET);
+            s_rx_buf_len = rxLen;
             s_spi_state = SPI_IDLE;
             acq_imu_start_spi_transfer();
             break;           
@@ -138,6 +143,10 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef * hspi) {
     acq_imu_spi_complete_callback();
 }
 
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi) {
+    acq_imu_spi_complete_callback();
+}
+
 static void acq_imu_disable_interrupts(void) {
     HAL_NVIC_DisableIRQ(IMU_NINT_GPIO_EXTI10_EXTI_IRQn);
     HAL_NVIC_DisableIRQ(SPI1_IRQn);
@@ -146,6 +155,14 @@ static void acq_imu_disable_interrupts(void) {
 static void acq_imu_enable_interrupts(void) {
     HAL_NVIC_EnableIRQ(IMU_NINT_GPIO_EXTI10_EXTI_IRQn);
     HAL_NVIC_EnableIRQ(SPI1_IRQn);
+}
+
+static void usDelay(uint32_t delay) {
+	volatile uint32_t now = timing_get_us_since_on();
+	uint32_t start = now;
+	while ((now - start) < delay) {
+		now = timing_get_us_since_on();
+	}
 }
 
 /*******************************************************************************
@@ -184,14 +201,13 @@ static int acq_imu_spi_open(sh2_Hal_t *self) {
     HAL_SPI_Transmit(&IMU_hspi, dummyTx, sizeof(dummyTx), 2);
     s_spi_state = SPI_IDLE;
 
-    HAL_Delay(10);
+    usDelay(10000);
 
     ps0_waken(GPIO_PIN_SET);
     rstn(GPIO_PIN_SET);
     
     acq_imu_enable_interrupts();
-
-    HAL_Delay(2000);
+    usDelay(2000000);
 
     return SH2_OK;
 }
@@ -288,7 +304,7 @@ static int acq_imu_spi_hal_write(sh2_Hal_t *self, uint8_t *pBuffer, unsigned len
 /*******************************************************************************
  * High-level sensor control
  */
-#define ACQ_IMU_SENSOR_BUFFER_LENGTH (8 * 1000)
+#define ACQ_IMU_SENSOR_BUFFER_LENGTH (1000)
 sh2_SensorValue_t s_acq_imu_sensor_value_buffer[ACQ_IMU_SENSOR_BUFFER_LENGTH];
 static volatile size_t s_acq_imu_sensor_write_position = 0;
 static volatile size_t s_acq_imu_sensor_read_position = 0;
@@ -318,7 +334,7 @@ const struct {
     {SH2_ACCELEROMETER, {.reportInterval_us = 20000}},
     {SH2_GYROSCOPE_CALIBRATED, {.reportInterval_us = 20000} },
     {SH2_MAGNETIC_FIELD_CALIBRATED, {.reportInterval_us = 20000}},
-    {SH2_ROTATION_VECTOR, {.reportInterval_us = 20000}},
+    {SH2_ROTATION_VECTOR, {.reportInterval_us = 50000}},
 };
 
 const sh2_Quaternion_t s_imu_reorientation_quat = {
@@ -330,6 +346,8 @@ const sh2_Quaternion_t s_imu_reorientation_quat = {
 
 
 void acq_imu_init(void) {
+    acq_imu_disable_interrupts();
+
     int status = sh2_open(&bno08x, NULL, NULL);
     if (status != SH2_OK) {
         //ToDo: sh2 error handling

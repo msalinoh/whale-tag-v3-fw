@@ -33,7 +33,8 @@ void rtc_init(void) {
   subseconds_us = (1000000 * time.SubSeconds) / (time.SecondFraction + 1);
 
   s_timer_start_rtc_epoch_us = (seconds * 1000000) + subseconds_us;
-  s_timer_start_timer_count_us = __HAL_TIM_GetCounter(&htim4);
+  HAL_TIM_Base_Start_IT(&uS_htim);
+  s_timer_start_timer_count_us = uS_htim.Instance->CNT;
 }
 
 time_t rtc_get_epoch_s(void) {
@@ -58,11 +59,11 @@ time_t rtc_get_epoch_ms(void) { return rtc_get_epoch_us() / 1000; }
 
 time_t rtc_get_epoch_us(void) {
   // use the systemclock for better accuracy
-  return s_timer_start_rtc_epoch_us + (time_t)(__HAL_TIM_GetCounter(&htim4) - s_timer_start_timer_count_us);
+  return s_timer_start_rtc_epoch_us + (time_t)timing_get_us_since_on();
 }
 
 uint32_t timing_get_us_since_on(void) {
-  return (__HAL_TIM_GetCounter(&htim4) - s_timer_start_timer_count_us);
+  return (uS_htim.Instance->CNT - s_timer_start_timer_count_us);
 }
 
 void timing_task(void) {
