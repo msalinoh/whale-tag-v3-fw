@@ -8,7 +8,7 @@
  *****************************************************************************/
 #include "sh2.h"
 #include "sh2_err.h"
-#include "sh2_sensorValue.h"
+#include "sh2_SensorValue.h"
 
 #include "main.h"
 #include "spi.h"

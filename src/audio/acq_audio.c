@@ -52,7 +52,6 @@ static uint8_t s_circular_write_block = 0;
  * This is the buffer that holds the data prior to it being processed/pushed to
  * the SDCard
  */
-#define RETAIN_BUFFER_SIZE_BLOCKS 64
 #define RETAIN_BUFFER_BLOCK_TO_HALF(block)                                     \
   ((block) / (RETAIN_BUFFER_SIZE_BLOCKS / 2))
 #define AUDIO_WRITE_INTERVAL_S                                                 \

@@ -13,7 +13,7 @@ static int timing_has_synced = 0;
 volatile time_t s_timer_sync_rtc_epoch_us = 0;
 
 static void us_timer_rollover(TIM_HandleTypeDef *htim) {
-  s_timer_sync_rtc_epoch_us += (1 << 32);
+  s_timer_sync_rtc_epoch_us += ((time_t)1 << 32);
 }
 
 void rtc_init(void) {
