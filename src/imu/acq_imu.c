@@ -346,6 +346,7 @@ const sh2_Quaternion_t s_imu_reorientation_quat = {
 
 
 void acq_imu_init(void) {
+    sh2_ProductIds_t pid;
     acq_imu_disable_interrupts();
 
     int status = sh2_open(&bno08x, NULL, NULL);
@@ -355,11 +356,13 @@ void acq_imu_init(void) {
     sh2_setSensorCallback(acq_imu_sensor_callback, NULL);
 
     // ToDo: get product id to verify sensor
+    status = sh2_getProdIds(&pid);
+    if (status != SH2_OK) {
+        // ToDo: sh2 error handling
+    }
 
     // ToDo: configure IMU orientation to tag frame
     // sh2_setReorientation(&s_imu_reorientation_quat);
-
-    // ToDo: configure report batching
 }
 
 void acq_imu_start(void) {

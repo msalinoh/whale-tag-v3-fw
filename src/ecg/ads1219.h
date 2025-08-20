@@ -51,6 +51,7 @@ typedef struct {
 
 void ads1219_apply_configuration(const ADS1219_Configuration *configuration);
 void ads1219_read_data_raw(int32_t *reading);
+void ads1219_read_data_raw_it(int32_t *reading, void (*callback)(void));
 void ads1219_reset(void);
 void ads1219_start(void);
 

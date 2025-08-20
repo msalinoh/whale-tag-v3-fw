@@ -1,6 +1,12 @@
 #ignore built files
 build/
 
+#ignore temporary files
+tmp/
+
+#ignore design docs
+design/
+
 # MxCube ignore generated files
 board/beta/*/
 board/nucleo/*/

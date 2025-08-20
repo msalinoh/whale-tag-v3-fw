@@ -91,7 +91,7 @@ const CetiBatterySample* acq_battery_get_next_sample(void) {
  * 
  * @return const CetiBatterySample* 
  */
-void acq_battery_peak_latest_sample(CetiBatterySample *pSample) {
+void acq_battery_peak_latest_sample(CetiBatterySample * const pSample) {
     if (pSample != NULL) {
         memcpy(pSample, &acq_battery_buffer[acq_battery_buffer_latest_position], sizeof(CetiBatterySample));
     }

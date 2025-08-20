@@ -91,7 +91,7 @@ void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
 void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 {
 	switch(GPIO_Pin) {
-#ifdef ECG_ENABLE
+#ifdef ECG_ENABLED
 		case ECG_ADC_NDRDY_GPIO_Input_Pin: // 2
 			acq_ecg_EXTI_Callback();
 			break;
@@ -267,6 +267,10 @@ int main(void) {
 #ifdef IMU_ENABLED
     acq_imu_start();
 #endif //IMU_ENABLED
+
+#ifdef ECG_ENABLED
+    acq_ecg_start();
+#endif
 
 #ifdef AUDIO_ENABLED
     acq_audio_start();

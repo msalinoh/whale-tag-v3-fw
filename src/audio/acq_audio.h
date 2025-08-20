@@ -21,7 +21,7 @@
 #define AUDIO_CIRCULAR_BUFFER_SIZE_MAX (UINT16_MAX/2)
 #define AUDIO_CIRCULAR_BUFFER_SIZE  (AUDIO_CIRCULAR_BUFFER_SIZE_MAX)
 
-#define RETAIN_BUFFER_SIZE_BLOCKS 64
+#define RETAIN_BUFFER_SIZE_BLOCKS 32
 
 
 typedef int (* AcqAudioLogCallback)(uint8_t *pData, uint32_t size);

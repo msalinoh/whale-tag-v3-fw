@@ -10,8 +10,11 @@ extern TIM_HandleTypeDef htim4;
 
 static int timing_has_synced = 0;
 
-time_t s_timer_start_rtc_epoch_us = 0;
-uint32_t s_timer_start_timer_count_us = 0;
+volatile time_t s_timer_sync_rtc_epoch_us = 0;
+
+static void us_timer_rollover(TIM_HandleTypeDef *htim) {
+  s_timer_sync_rtc_epoch_us += (1 << 32);
+}
 
 void rtc_init(void) {
   RTC_DateTypeDef date;
@@ -32,9 +35,10 @@ void rtc_init(void) {
   seconds = mktime(&datetime);
   subseconds_us = (1000000 * time.SubSeconds) / (time.SecondFraction + 1);
 
-  s_timer_start_rtc_epoch_us = (seconds * 1000000) + subseconds_us;
+  s_timer_sync_rtc_epoch_us = (seconds * 1000000) + subseconds_us;
+  uS_htim.Instance->CNT = 0;
   HAL_TIM_Base_Start_IT(&uS_htim);
-  s_timer_start_timer_count_us = uS_htim.Instance->CNT;
+  HAL_TIM_RegisterCallback(&uS_htim, HAL_TIM_PERIOD_ELAPSED_CB_ID, us_timer_rollover);
 }
 
 time_t rtc_get_epoch_s(void) {
@@ -59,11 +63,11 @@ time_t rtc_get_epoch_ms(void) { return rtc_get_epoch_us() / 1000; }
 
 time_t rtc_get_epoch_us(void) {
   // use the systemclock for better accuracy
-  return s_timer_start_rtc_epoch_us + (time_t)timing_get_us_since_on();
+  return s_timer_sync_rtc_epoch_us + (time_t)timing_get_us_since_on();
 }
 
 uint32_t timing_get_us_since_on(void) {
-  return (uS_htim.Instance->CNT - s_timer_start_timer_count_us);
+  return uS_htim.Instance->CNT;
 }
 
 void timing_task(void) {
