@@ -1,4 +1,4 @@
-BOARD ?= V3_1
+BOARD ?= v3_1
 DEBUG ?= 1
 
 BUILD_ROOT = build
@@ -42,7 +42,7 @@ ifeq ($(BOARD), nucleo)
 	C_DEFS += -DHW_VERSION=0
 endif
 
-ifeq ($(BOARD), V3_1)
+ifeq ($(BOARD), v3_1)
 	CPU = -mcpu=cortex-m33
 	FPU = -mfpu=fpv4-sp-d16
 	FLOAT-ABI = -mfloat-abi=hard
@@ -63,16 +63,7 @@ else
 endif
 
 # Generate dependency information
-# C_INCLUDES += $(addprefix -I,$(shell find board/$(BOARD) -type d \( -iname 'inc' -o -iname 'include' -o -iwholename '*/inc/legacy' -o -iname 'app' \) 2> /dev/null))
-C_INCLUDES += -Iboard/v3_1/Core/Inc \
--Iboard/v3_1/Drivers/CMSIS/Device/ST/STM32U5xx/Include \
--Iboard/v3_1/Drivers/CMSIS/Include \
--Iboard/v3_1/Drivers/STM32U5xx_HAL_Driver/Inc \
--Iboard/v3_1/Drivers/STM32U5xx_HAL_Driver/Inc/Legacy \
--Iboard/v3_1/FileX/App \
--Iboard/v3_1/Middlewares/ST/filex/common/inc \
--Iboard/v3_1/Middlewares/ST/filex/ports/generic/inc
-
+C_INCLUDES += $(addprefix -I,$(shell find board/$(BOARD) -type d \( -iname 'inc' -o -iname 'include' -o -iwholename '*/inc/legacy' -o -iname 'app' \) 2> /dev/null))
 C_INCLUDES += -Ilib/tinyusb/src
 C_INCLUDES += -Ilib/sh2
 C_INCLUDES += -Isrc
@@ -144,26 +135,26 @@ $(VERSION_H):
 # mkdirs
 $(ALL_DIRS):
 	$(call print1,Making Folder:,$@)
-	$(MKDIR) -p $@
+	@$(MKDIR) -p $@
 
 # .s -> .o
 $(BUILD_DIR)/%.s.o : %.s | $(ASM_BUILD_DIRS)
 	$(call print2,Assembling:,$<,$@)
-	$(CC) -x assembler-with-cpp -c $(CFLAGS) $< -o $@
+	@$(CC) -x assembler-with-cpp -c $(CFLAGS) $< -o $@
 	
 #main.c -> main.o
 $(BUILD_DIR)/%/main.c.o : %/main.c src/config.h | $(C_BUILD_DIRS)
 	$(call print2,Compiling:,$<,$@)
-	$(CC) -c $(CFLAGS) $< -o $@ 
+	@$(CC) -c $(CFLAGS) $< -o $@ 
 
 # .c -> .o
 $(BUILD_DIR)/%.c.o : %.c | $(C_BUILD_DIRS)
 	$(call print2,Compiling:,$<,$@)
-	$(CC) -c $(CFLAGS) $< -o $@ 
+	@$(CC) -c $(CFLAGS) $< -o $@ 
 
 $(BUILD_DIR)/$(TARGET).elf: $(VERSION_H) $(ALL_OBJS) | $(BUILD_DIR)
 	$(call print1,Linking elf:,$@)
-	$(CC) $^ $(LDFLAGS) -o $@
+	@$(CC) $^ $(LDFLAGS) -o $@
 	$(SZ) $@
 	@$(PRINT) "\n$$(cat logo.ansi.txt)\n"	
 
@@ -173,7 +164,7 @@ $(BUILD_DIR)/$(TARGET).hex: $(BUILD_DIR)/$(TARGET).elf
 
 $(BUILD_DIR)/$(TARGET).bin: $(BUILD_DIR)/$(TARGET).elf 
 	$(call print1,Creating bin:,$@)
-	$(CP) -O binary -S $< $@
+	@$(CP) -O binary -S $< $@
 
 flash: $(BUILD_DIR)/$(TARGET).elf
 	$(call print0, Flashing via stlink)

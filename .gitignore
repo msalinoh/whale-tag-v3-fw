@@ -7,6 +7,9 @@ tmp/
 #ignore design docs
 design/
 
+#ignore version file
+src/version.h
+
 # MxCube ignore generated files
 board/beta/*/
 board/nucleo/*/
