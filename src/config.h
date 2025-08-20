@@ -3,12 +3,12 @@
 #define CETI_CONFIG_H
 
 /* AUDIO CONFIG */
-// #define AUDIO_ENABLED
-// #define BMS_ENABLED
+#define AUDIO_ENABLED
+#define BMS_ENABLED
 // #define ECG_ENABLED
-#define IMU_ENABLED
+// #define IMU_ENABLED
 // #define GPS_ENABLED
-// #define PRESSURE_ENABLED
+#define PRESSURE_ENABLED
 // #define SATELLITE_ENABLED
 // #define USB_ENABLED
 
