@@ -8,7 +8,7 @@
 //  #define ECG_ENABLED
 // #define IMU_ENABLED
 // #define GPS_ENABLED
-#define PRESSURE_ENABLED
+//#define PRESSURE_ENABLED
 // #define SATELLITE_ENABLED
 // #define USB_ENABLED
 
@@ -23,6 +23,14 @@
 #define AUDIO_CH_2_EN         (1)
 #define AUDIO_CH_3_EN         (1)
 #define AUDIO_CHANNEL_MASK    (((AUDIO_CH_0_EN) << 0) | ((AUDIO_CH_1_EN) << 0) | ((AUDIO_CH_2_EN) << 0) | (AUDIO_CH_3_EN << 0))
+
+#define AUDIO_PRIORITIZE_NOISE 0
+#define AUDIO_PRIORITIZE_POWER 1
+#define AUDIO_PRIORITY AUDIO_PRIORITIZE_NOISE
+
+#define AUDIO_FILTER_SINC     0
+#define AUDIO_FILTER_WIDEBAND 1
+#define AUDIO_FILTER AUDIO_FILTER_SINC
 
 /* BMS CONFIG */
 #ifndef BMS_ENABLED

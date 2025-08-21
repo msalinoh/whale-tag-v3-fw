@@ -24,12 +24,21 @@
 #include <stdbool.h>
 
 // Supported Hardware
-#define AUDIO_SAMPLE_RATE_SpS 96000
-#define AUDIO_BITDEPTH 24
-#define AUDIO_CHANNEL_COUNT 4
+#define AUDIO_CHANNEL_COUNT (AUDIO_CH_0_EN + AUDIO_CH_1_EN + AUDIO_CH_2_EN + AUDIO_CH_3_EN)
 
 #define ADC_AD7768 0
 #define AUDIO_ADC_PART_NUMBER ADC_AD7768
+#if AUDIO_SAMPLE_BITDEPTH == 24
+//#define AUDIO_SAI_CHANNEL_MASK (0b1110)
+#define AUDIO_SAI_CHANNEL_MASK (0b1110)
+#elif AUDIO_SAMPLE_BITDEPTH == 16
+#define AUDIO_SAI_CHANNEL_MASK (0b0110)
+#endif
+
+#define AUDIO_SAI_SLOT_MASK (((AUDIO_CH_0_EN * AUDIO_SAI_CHANNEL_MASK) << 0) \
+    | ((AUDIO_CH_1_EN * AUDIO_SAI_CHANNEL_MASK) << 4)                          \
+    | ((AUDIO_CH_2_EN * AUDIO_SAI_CHANNEL_MASK) << 8)                          \
+    | ((AUDIO_CH_3_EN * AUDIO_SAI_CHANNEL_MASK) << 12))
 
 #if AUDIO_ADC_PART_NUMBER == ADC_AD7768
 #include "ad7768.h" // this hardware is only used here, so no need for a header
@@ -56,7 +65,7 @@ static uint8_t s_circular_write_block = 0;
   ((block) / (RETAIN_BUFFER_SIZE_BLOCKS / 2))
 #define AUDIO_WRITE_INTERVAL_S                                                 \
   ((double)(AUDIO_CIRCULAR_BUFFER_SIZE * RETAIN_BUFFER_SIZE_BLOCKS / 2) /      \
-   (double)(AUDIO_SAMPLE_RATE_SpS * (AUDIO_BITDEPTH / 8) *                     \
+   (double)(AUDIO_SAMPLERATE_SPS * (AUDIO_SAMPLE_BITDEPTH / 8) *               \
             AUDIO_CHANNEL_COUNT))
 
 #if RETAIN_BUFFER_SIZE_BLOCKS != 2
@@ -81,36 +90,100 @@ ad7768_dev audio_adc = {
     .spi_handler = &AUDIO_hspi,
     .spi_cs_port = AUDIO_NCS_GPIO_Output_GPIO_Port,
     .spi_cs_pin = AUDIO_NCS_GPIO_Output_Pin,
-    .channel_standby = {.ch[0] = AD7768_ENABLED,
-                        .ch[1] = AD7768_ENABLED,
-                        .ch[2] = AD7768_ENABLED,
-                        .ch[3] = AD7768_ENABLED},
-    .channel_mode[AD7768_MODE_A] = {.filter_type = AD7768_FILTER_SINC,
-                                    .dec_rate = AD7768_DEC_X32},
-    .channel_mode[AD7768_MODE_B] = {.filter_type = AD7768_FILTER_WIDEBAND,
-                                    .dec_rate = AD7768_DEC_X32},
-    .channel_mode_select =
-        {
+    .channel_standby = {
 #if AUDIO_CH_0_EN == 1
-            .ch[0] = AD7768_MODE_B,
-#else 
-            .ch[0] = AD7768_MODE_A,
+        .ch[0] = AD7768_ENABLED,
+#else
+        .ch[0] = AD7768_STANDBY,
 #endif
-            .ch[1] = AD7768_MODE_B,
-            .ch[2] = AD7768_MODE_B,
-            .ch[3] = AD7768_MODE_B,
-        },
-    .power_mode =
-        {
+#if AUDIO_CH_1_EN == 1
+        .ch[1] = AD7768_ENABLED,
+#else 
+        .ch[1] = AD7768_STANDBY,
+#endif
+#if AUDIO_CH_2_EN == 1
+        .ch[2] = AD7768_ENABLED,
+#else 
+        .ch[2] = AD7768_STANDBY,
+#endif
+#if AUDIO_CH_3_EN == 1
+        .ch[3] = AD7768_ENABLED,
+#else 
+        .ch[3] = AD7768_STANDBY,
+#endif
+    },
+    .channel_mode[AD7768_MODE_A] = {
+        .filter_type = AD7768_FILTER_SINC,
+#if (AUDIO_SAMPLERATE_SPS == 96000) && (AUDIO_PRIORITY == AUDIO_PRIORITIZE_NOISE)
+            .dec_rate = AD7768_DEC_X64,
+#elif (AUDIO_SAMPLERATE_SPS == 96000) && (AUDIO_PRIORITY == AUDIO_PRIORITIZE_POWER)
+            .dec_rate = AD7768_DEC_X32,
+#elif AUDIO_SAMPLERATE_SPS == 192000
+            .dec_rate = AD7768_DEC_X32,
+#endif
+    },
+    .channel_mode[AD7768_MODE_B] = {
+#if AUDIO_FILTER == AUDIO_FILTER_SINC
+        .filter_type = AD7768_FILTER_SINC,
+#else
+		.filter_type = AD7768_FILTER_WIDEBAND,
+#endif
+#if (AUDIO_SAMPLERATE_SPS == 96000) && (AUDIO_PRIORITY == AUDIO_PRIORITIZE_NOISE)
+            .dec_rate = AD7768_DEC_X64,
+#elif (AUDIO_SAMPLERATE_SPS == 96000) && (AUDIO_PRIORITY == AUDIO_PRIORITIZE_POWER)
+            .dec_rate = AD7768_DEC_X32,
+#elif AUDIO_SAMPLERATE_SPS == 192000
+            .dec_rate = AD7768_DEC_X32,
+#endif
+    },
+    .channel_mode_select = {
+#if AUDIO_CH_0_EN == 1
+        .ch[0] = AD7768_MODE_B,
+#else 
+        .ch[0] = AD7768_MODE_A,
+#endif
+#if AUDIO_CH_1_EN == 1
+        .ch[1] = AD7768_MODE_B,
+#else 
+        .ch[1] = AD7768_MODE_A,
+#endif
+#if AUDIO_CH_2_EN == 1
+        .ch[2] = AD7768_MODE_B,
+#else 
+        .ch[2] = AD7768_MODE_A,
+#endif
+#if AUDIO_CH_3_EN == 1
+        .ch[3] = AD7768_MODE_B,
+#else 
+        .ch[3] = AD7768_MODE_A,
+#endif
+    },
+    .power_mode = {
+#if (AUDIO_SAMPLERATE_SPS == 96000) && (AUDIO_PRIORITY == AUDIO_PRIORITIZE_NOISE)
+            .sleep_mode = AD7768_ACTIVE,
+            .power_mode = AD7768_FAST,
+            .lvds_enable = false,
+            .mclk_div = AD7768_MCLK_DIV_4,
+#elif (AUDIO_SAMPLERATE_SPS == 96000) && (AUDIO_PRIORITY == AUDIO_PRIORITIZE_POWER)
             .sleep_mode = AD7768_ACTIVE,
             .power_mode = AD7768_MEDIAN,
             .lvds_enable = false,
             .mclk_div = AD7768_MCLK_DIV_8,
+#elif AUDIO_SAMPLERATE_SPS == 192000
+            .sleep_mode = AD7768_ACTIVE,
+            .power_mode = AD7768_FAST,
+            .lvds_enable = false,
+            .mclk_div = AD7768_MCLK_DIV_4,
+#endif
         },
-    .interface_config =
-        {
-            .crc_select = AD7768_CRC_NONE,
-            .dclk_div = AD7768_DCLK_DIV_1,
+    .interface_config = {
+#if AUDIO_SAMPLERATE_SPS == 192000
+        .crc_select = AD7768_CRC_NONE,
+        .dclk_div = AD7768_DCLK_DIV_1,
+#elif AUDIO_SAMPLERATE_SPS == 96000
+        .crc_select = AD7768_CRC_NONE,
+        .dclk_div = AD7768_DCLK_DIV_1,
+#endif
         },
     .pin_spi_ctrl = AD7768_SPI_CTRL,
 };
@@ -160,6 +233,41 @@ void audio_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai) {
 #endif
 }
 
+void acq_audio_sai_init(void) {
+	  hsai_BlockA1.Instance = SAI1_Block_A;
+	  hsai_BlockA1.Init.Protocol = SAI_FREE_PROTOCOL;
+	  hsai_BlockA1.Init.AudioMode = SAI_MODESLAVE_RX;
+	  hsai_BlockA1.Init.DataSize = SAI_DATASIZE_8;
+	  hsai_BlockA1.Init.FirstBit = SAI_FIRSTBIT_MSB;
+	  hsai_BlockA1.Init.ClockStrobing = SAI_CLOCKSTROBING_FALLINGEDGE;
+	  hsai_BlockA1.Init.Synchro = SAI_ASYNCHRONOUS;
+	  hsai_BlockA1.Init.OutputDrive = SAI_OUTPUTDRIVE_DISABLE;
+	  hsai_BlockA1.Init.NoDivider = SAI_MASTERDIVIDER_ENABLE;
+	  hsai_BlockA1.Init.MckOverSampling = SAI_MCK_OVERSAMPLING_DISABLE;
+	  hsai_BlockA1.Init.FIFOThreshold = SAI_FIFOTHRESHOLD_EMPTY;
+	  hsai_BlockA1.Init.SynchroExt = SAI_SYNCEXT_DISABLE;
+	  hsai_BlockA1.Init.MckOutput = SAI_MCK_OUTPUT_ENABLE;
+	  hsai_BlockA1.Init.MonoStereoMode = SAI_STEREOMODE;
+	  hsai_BlockA1.Init.CompandingMode = SAI_NOCOMPANDING;
+	  hsai_BlockA1.Init.TriState = SAI_OUTPUT_NOTRELEASED;
+	  hsai_BlockA1.Init.PdmInit.Activation = DISABLE;
+	  hsai_BlockA1.Init.PdmInit.MicPairsNbr = 1;
+	  hsai_BlockA1.Init.PdmInit.ClockEnable = SAI_PDM_CLOCK1_ENABLE;
+	  hsai_BlockA1.FrameInit.FrameLength = 128;
+	  hsai_BlockA1.FrameInit.ActiveFrameLength = 1;
+	  hsai_BlockA1.FrameInit.FSDefinition = SAI_FS_STARTFRAME;
+	  hsai_BlockA1.FrameInit.FSPolarity = SAI_FS_ACTIVE_LOW;
+	  hsai_BlockA1.FrameInit.FSOffset = SAI_FS_FIRSTBIT;
+	  hsai_BlockA1.SlotInit.FirstBitOffset = 0;
+	  hsai_BlockA1.SlotInit.SlotSize = SAI_SLOTSIZE_DATASIZE;
+	  hsai_BlockA1.SlotInit.SlotNumber = 16;
+	  hsai_BlockA1.SlotInit.SlotActive = AUDIO_SAI_SLOT_MASK;
+	  if (HAL_SAI_Init(&hsai_BlockA1) != HAL_OK)
+	  {
+	    Error_Handler();
+	  }
+}
+
 void acq_audio_init(void) {
   if (s_audio_enabled) {
     // nothing to do
@@ -167,15 +275,15 @@ void acq_audio_init(void) {
   }
 
   // configure MCU hardware for serial audio interface
-  MX_SAI1_Init();
+  acq_audio_sai_init();
   MX_SPI1_Init();
 
   /* turn on power to audio front-end */
-  HAL_GPIO_WritePin(Audio_VN_NEN_GPIO_Output_GPIO_Port,
-                    Audio_VN_NEN_GPIO_Output_Pin, GPIO_PIN_RESET);
-  HAL_Delay(1);
-  HAL_GPIO_WritePin(AUDIO_VP_EN_GPIO_Output_GPIO_Port,
-                    AUDIO_VP_EN_GPIO_Output_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(AUDIO_VP_EN_GPIO_Output_GPIO_Port, AUDIO_VP_EN_GPIO_Output_Pin, GPIO_PIN_RESET);
+  HAL_Delay(200);
+  HAL_GPIO_WritePin(Audio_VN_NEN_GPIO_Output_GPIO_Port, Audio_VN_NEN_GPIO_Output_Pin, GPIO_PIN_RESET);
+  HAL_Delay(200);
+  HAL_GPIO_WritePin(AUDIO_VP_EN_GPIO_Output_GPIO_Port, AUDIO_VP_EN_GPIO_Output_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(AUDIO_NRST_GPIO_Output_GPIO_Port,
                     AUDIO_NRST_GPIO_Output_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(AUDIO_NCS_GPIO_Output_GPIO_Port, AUDIO_NCS_GPIO_Output_Pin,

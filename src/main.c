@@ -108,7 +108,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 	}
 }
 
-int main(void) { 
+int main(void) {
     HAL_Init();
     SystemClock_Config();
     SystemPower_Config();
