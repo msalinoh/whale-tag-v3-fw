@@ -172,13 +172,13 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(FLASHER_LED_EN_GPIO_Output_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : ADC_CLOCK_Pin */
-  GPIO_InitStruct.Pin = ADC_CLOCK_Pin;
+  /*Configure GPIO pin : AUDIO_CLK_Pin */
+  GPIO_InitStruct.Pin = AUDIO_CLK_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
-  HAL_GPIO_Init(ADC_CLOCK_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(AUDIO_CLK_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PA9 PA15 */
   GPIO_InitStruct.Pin = GPIO_PIN_9|GPIO_PIN_15;
@@ -212,7 +212,7 @@ void MX_GPIO_Init(void)
   HAL_NVIC_EnableIRQ(EXTI9_IRQn);
 
   HAL_NVIC_SetPriority(EXTI10_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI10_IRQn);
+  //HAL_NVIC_EnableIRQ(EXTI10_IRQn);
 
 }
 

@@ -51,7 +51,7 @@ const CetiPressureSample *acq_pressure_get_next_sample(void) {
     return next_sample;
 }
 
-void acq_pressure_get_next_buffer_range(uint8_t **ppBuffer, size_t *pSize) {
+void acq_pressure_get_next_buffer_range(void **ppBuffer, size_t *pSize) {
     if ((ppBuffer == NULL) || (pSize == NULL)){
         //ToDo: bad params handler
         return;

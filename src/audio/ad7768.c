@@ -181,10 +181,7 @@ static inline void prv_ad7768_spi_deselect(ad7768_dev *dev){
  * @param reg_data - The register data.
  * @return 0 in case of success, negative error code otherwise.
  */
-HAL_StatusTypeDef ad7768_spi_read(ad7768_dev *dev,
-			uint8_t reg_addr,
-			uint8_t *reg_data)
-{
+HAL_StatusTypeDef ad7768_spi_read(ad7768_dev *dev, uint8_t reg_addr, uint8_t *reg_data) {
 	uint8_t tx_buf[2] = {AD7768_SPI_READ(reg_addr), 0};
 	uint8_t rx_buf[2];
 	HAL_StatusTypeDef ret;
@@ -213,10 +210,7 @@ HAL_StatusTypeDef ad7768_spi_read(ad7768_dev *dev,
  * @param reg_data - The register data.
  * @return 0 in case of success, negative error code otherwise.
  */
-HAL_StatusTypeDef ad7768_spi_write(ad7768_dev *dev,
-			 uint8_t reg_addr,
-			 uint8_t reg_data)
-{
+HAL_StatusTypeDef ad7768_spi_write(ad7768_dev *dev, uint8_t reg_addr, uint8_t reg_data) {
     HAL_StatusTypeDef ret;
 	uint8_t buf[2] = {AD7768_SPI_WRITE(reg_addr), reg_data};
 	prv_ad7768_spi_select(dev);
@@ -263,9 +257,7 @@ HAL_StatusTypeDef ad7768_set_sleep_mode(ad7768_dev *dev, ad7768_sleep_mode mode)
  * @param mode - The device sleep mode.
  * @return 0 in case of success, negative error code otherwise.
  */
-HAL_StatusTypeDef ad7768_get_sleep_mode(ad7768_dev *dev,
-			      ad7768_sleep_mode *mode)
-{
+HAL_StatusTypeDef ad7768_get_sleep_mode(ad7768_dev *dev, ad7768_sleep_mode *mode) {
 	*mode = dev->power_mode.sleep_mode;
 
 	return HAL_OK;
@@ -281,10 +273,8 @@ HAL_StatusTypeDef ad7768_get_sleep_mode(ad7768_dev *dev,
  *								  AD7768_FAST
  * @return 0 in case of success, negative error code otherwise.
  */
-HAL_StatusTypeDef ad7768_set_power_mode(ad7768_dev *dev,
-			      ad7768_power_mode mode)
-{
-	HAL_StatusTypeDef ret = HAL_ERROR;
+HAL_StatusTypeDef ad7768_set_power_mode(ad7768_dev *dev, ad7768_power_mode mode) {
+	HAL_StatusTypeDef ret = HAL_OK;
 
 	if (dev->pin_spi_ctrl == AD7768_SPI_CTRL) {
 		dev->power_mode.power_mode = mode;
@@ -299,9 +289,7 @@ HAL_StatusTypeDef ad7768_set_power_mode(ad7768_dev *dev,
  * @param mode - The device power mode.
  * @return 0 in case of success, negative error code otherwise.
  */
-HAL_StatusTypeDef ad7768_get_power_mode(ad7768_dev *dev,
-			      ad7768_power_mode *mode)
-{
+HAL_StatusTypeDef ad7768_get_power_mode(ad7768_dev *dev, ad7768_power_mode *mode) {
 	*mode = dev->power_mode.power_mode;
 
 	return 0;
@@ -316,7 +304,7 @@ HAL_StatusTypeDef ad7768_get_power_mode(ad7768_dev *dev,
  *									 AD7768_MCLK_DIV_4
  * @return 0 in case of success, negative error code otherwise.
  */
-HAL_StatusTypeDef ad7768_set_mclk_div(ad7768_dev *dev, ad7768_mclk_div clk_div){
+HAL_StatusTypeDef ad7768_set_mclk_div(ad7768_dev *dev, ad7768_mclk_div clk_div) {
 	HAL_StatusTypeDef ret = HAL_OK;
     uint8_t raw;
 
@@ -336,9 +324,7 @@ HAL_StatusTypeDef ad7768_set_mclk_div(ad7768_dev *dev, ad7768_mclk_div clk_div){
  * @param clk_div - The MCLK divider.
  * @return 0 in case of success, negative error code otherwise.
  */
-HAL_StatusTypeDef ad7768_get_mclk_div(ad7768_dev *dev,
-			    ad7768_mclk_div *clk_div)
-{
+HAL_StatusTypeDef ad7768_get_mclk_div(ad7768_dev *dev, ad7768_mclk_div *clk_div) {
 	*clk_div = dev->power_mode.mclk_div;
 
 	return HAL_OK;
@@ -354,9 +340,7 @@ HAL_StatusTypeDef ad7768_get_mclk_div(ad7768_dev *dev,
  *									 AD7768_DCLK_DIV_8
  * @return 0 in case of success, negative error code otherwise.
  */
-HAL_StatusTypeDef ad7768_set_dclk_div(ad7768_dev *dev,
-			    ad7768_dclk_div clk_div)
-{
+HAL_StatusTypeDef ad7768_set_dclk_div(ad7768_dev *dev, ad7768_dclk_div clk_div) {
 	HAL_StatusTypeDef ret = HAL_OK;
     uint8_t raw;
 
@@ -380,9 +364,7 @@ HAL_StatusTypeDef ad7768_set_dclk_div(ad7768_dev *dev,
  * @param clk_div - The DCLK divider.
  * @return 0 in case of success, negative error code otherwise.
  */
-HAL_StatusTypeDef ad7768_get_dclk_div(ad7768_dev *dev,
-			    ad7768_dclk_div *clk_div)
-{
+HAL_StatusTypeDef ad7768_get_dclk_div(ad7768_dev *dev, ad7768_dclk_div *clk_div) {
 	*clk_div = dev->interface_config.dclk_div;
 
 	return 0;
@@ -420,9 +402,7 @@ HAL_StatusTypeDef ad7768_set_conv_op(ad7768_dev *dev, ad7768_conv_op conv_op){
  * @param conv_op - The conversion operation mode.
  * @return 0 in case of success, negative error code otherwise.
  */
-HAL_StatusTypeDef ad7768_get_conv_op(ad7768_dev *dev,
-			   ad7768_conv_op *conv_op)
-{
+HAL_StatusTypeDef ad7768_get_conv_op(ad7768_dev *dev, ad7768_conv_op *conv_op) {
 	*conv_op = dev->data_control.single_shot_en;
 
 	return 0;
@@ -437,9 +417,7 @@ HAL_StatusTypeDef ad7768_get_conv_op(ad7768_dev *dev,
  * 									 AD7768_CRC_16
  * @return 0 in case of success, negative error code otherwise.
  */
-HAL_StatusTypeDef ad7768_set_crc_sel(ad7768_dev *dev,
-			   ad7768_crc_sel crc_sel)
-{
+HAL_StatusTypeDef ad7768_set_crc_sel(ad7768_dev *dev, ad7768_crc_sel crc_sel) {
 	HAL_StatusTypeDef ret = HAL_OK;
     uint8_t raw;
 
@@ -460,9 +438,7 @@ HAL_StatusTypeDef ad7768_set_crc_sel(ad7768_dev *dev,
  * @param crc_sel - The CRC selection.
  * @return 0 in case of success, negative error code otherwise.
  */
-HAL_StatusTypeDef ad7768_get_crc_sel(ad7768_dev *dev,
-			   ad7768_crc_sel *crc_sel)
-{
+HAL_StatusTypeDef ad7768_get_crc_sel(ad7768_dev *dev, ad7768_crc_sel *crc_sel) {
 	*crc_sel = dev->interface_config.crc_select;
 
 	return 0;
@@ -481,10 +457,7 @@ HAL_StatusTypeDef ad7768_get_crc_sel(ad7768_dev *dev,
  * 								   AD7768_STANDBY
  * @return 0 in case of success, negative error code otherwise.
  */
-HAL_StatusTypeDef ad7768_set_ch_state(ad7768_dev *dev,
-			    ad7768_ch ch,
-			    ad7768_ch_state state)
-{
+HAL_StatusTypeDef ad7768_set_ch_state(ad7768_dev *dev, ad7768_ch ch, ad7768_ch_state state) {
 	HAL_StatusTypeDef ret = HAL_OK;
     uint8_t raw;
 
@@ -509,10 +482,7 @@ HAL_StatusTypeDef ad7768_set_ch_state(ad7768_dev *dev,
  * @param state - The channel state.
  * @return 0 in case of success, negative error code otherwise.
  */
-HAL_StatusTypeDef ad7768_get_ch_state(ad7768_dev *dev,
-			    ad7768_ch ch,
-			    ad7768_ch_state *state)
-{
+HAL_StatusTypeDef ad7768_get_ch_state(ad7768_dev *dev, ad7768_ch ch, ad7768_ch_state *state) {
 	*state = dev->channel_standby.ch[ch];
 
 	return HAL_OK;
@@ -536,11 +506,7 @@ HAL_StatusTypeDef ad7768_get_ch_state(ad7768_dev *dev,
  * 					 				  AD7768_DEC_X1024
  * @return 0 in case of success, negative error code otherwise.
  */
-HAL_StatusTypeDef ad7768_set_mode_config(ad7768_dev *dev,
-			       ad7768_ch_mode mode,
-			       ad7768_filt_type filt_type,
-			       ad7768_dec_rate dec_rate)
-{
+HAL_StatusTypeDef ad7768_set_mode_config(ad7768_dev *dev, ad7768_ch_mode mode, ad7768_filt_type filt_type, ad7768_dec_rate dec_rate) {
 	dev->channel_mode[mode] = (ad7768_Reg_ChMode){
 		.filter_type = filt_type,
 		.dec_rate = dec_rate
@@ -668,11 +634,7 @@ HAL_StatusTypeDef ad7768_setup(ad7768_dev *dev){
 	ret |= ad7768_sync(dev);
 
 	uint8_t error_reg; 
-	ad7768_spi_read(dev, 0x09, &error_reg);
-
-	// TODO: Add error detection and correction
-//	if (!ret)
-//		printf("AD7768 successfully initialized\n");
+	ret |= ad7768_spi_read(dev, 0x09, &error_reg);
 
 	return ret;
 }

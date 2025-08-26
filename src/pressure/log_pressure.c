@@ -31,7 +31,7 @@ extern FX_MEDIA sdio_disk;
 FX_FILE pressure_file = {};
 
 #define PRESSURE_FILENAME "data_pressure.csv"
-static char *log_pressure_csv_header =
+char *log_pressure_csv_header =
     "Timestamp [us]"
     ", Notes"
     ", Pressure [bar]"
@@ -45,7 +45,7 @@ static void log_pressure_open_file(void) {
     fx_result = fx_file_create(&sdio_disk, PRESSURE_FILENAME);
     int is_new_file = 0;
     if ((fx_result != FX_SUCCESS) && (fx_result != FX_ALREADY_CREATED)) {
-        // Error_Handler();
+         Error_Handler();
     } else if ((fx_result != FX_ALREADY_CREATED)) {
         is_new_file = 1;
         CETI_LOG("Created new pressure file \"%s\"", PRESSURE_FILENAME);
@@ -53,7 +53,7 @@ static void log_pressure_open_file(void) {
     
     fx_result = fx_file_open(&sdio_disk, &pressure_file, PRESSURE_FILENAME, FX_OPEN_FOR_WRITE);
     if (fx_result != FX_SUCCESS) {
-        // Error_Handler();
+         Error_Handler();
     }
     CETI_LOG("Opened pressure file \"%s\"", PRESSURE_FILENAME);
 
@@ -64,6 +64,7 @@ static void log_pressure_open_file(void) {
     fx_result = fx_file_write(&pressure_file, log_pressure_csv_header, strlen(log_pressure_csv_header));
     if (fx_result != FX_SUCCESS) {
         // ToDo: error handling
+        Error_Handler();
     }
 }
 

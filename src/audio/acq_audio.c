@@ -123,7 +123,7 @@ ad7768_dev audio_adc = {
 #endif
     },
     .channel_mode[AD7768_MODE_B] = {
-#if AUDIO_FILTER == AUDIO_FILTER_SINC
+#if AUDIO_FILTER_TYPE == AUDIO_FILTER_SINC
         .filter_type = AD7768_FILTER_SINC,
 #else
 		.filter_type = AD7768_FILTER_WIDEBAND,
@@ -233,6 +233,10 @@ void audio_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai) {
 #endif
 }
 
+void acq_audio_configure_gpios(void) {
+
+}
+
 void acq_audio_sai_init(void) {
 	  hsai_BlockA1.Instance = SAI1_Block_A;
 	  hsai_BlockA1.Init.Protocol = SAI_FREE_PROTOCOL;
@@ -268,10 +272,10 @@ void acq_audio_sai_init(void) {
 	  }
 }
 
-void acq_audio_init(void) {
+int acq_audio_init(void) {
   if (s_audio_enabled) {
     // nothing to do
-    return;
+    return 0;
   }
 
   // configure MCU hardware for serial audio interface
@@ -284,35 +288,32 @@ void acq_audio_init(void) {
   HAL_GPIO_WritePin(Audio_VN_NEN_GPIO_Output_GPIO_Port, Audio_VN_NEN_GPIO_Output_Pin, GPIO_PIN_RESET);
   HAL_Delay(200);
   HAL_GPIO_WritePin(AUDIO_VP_EN_GPIO_Output_GPIO_Port, AUDIO_VP_EN_GPIO_Output_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(AUDIO_NRST_GPIO_Output_GPIO_Port,
-                    AUDIO_NRST_GPIO_Output_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(AUDIO_NCS_GPIO_Output_GPIO_Port, AUDIO_NCS_GPIO_Output_Pin,
-                    GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(AUDIO_NRST_GPIO_Output_GPIO_Port, AUDIO_NRST_GPIO_Output_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(AUDIO_NCS_GPIO_Output_GPIO_Port, AUDIO_NCS_GPIO_Output_Pin, GPIO_PIN_RESET);
 
   // ToDo: setup MCU to handle audio
   // Configure external hardware (ADC)
-  ad7768_setup(&audio_adc);
+  int result = ad7768_setup(&audio_adc);
 
   // after ad7768 is configured we no longer need the spi peripheral until we
   // shut it down
   HAL_SPI_DeInit(&AUDIO_hspi);
   __HAL_RCC_SPI3_CLK_DISABLE();
+
   // ToDo: recofigure spi_gpio as analog
 
   // Dummy delay
   HAL_Delay(1000);
 
   // Register callbacks
-  HAL_SAI_RegisterCallback(&hsai_BlockA1, HAL_SAI_RX_HALFCOMPLETE_CB_ID,
-                           audio_SAI_RxCpltCallback);
-  HAL_SAI_RegisterCallback(&hsai_BlockA1, HAL_SAI_RX_COMPLETE_CB_ID,
-                           audio_SAI_RxCpltCallback);
+  HAL_SAI_RegisterCallback(&hsai_BlockA1, HAL_SAI_RX_HALFCOMPLETE_CB_ID, audio_SAI_RxCpltCallback);
+  HAL_SAI_RegisterCallback(&hsai_BlockA1, HAL_SAI_RX_COMPLETE_CB_ID, audio_SAI_RxCpltCallback);
 #if RETAIN_BUFFER_SIZE_BLOCKS != 2
-  HAL_DMA_RegisterCallback(&handle_GPDMA1_Channel0, HAL_DMA_XFER_CPLT_CB_ID,
-                           audio_retain_completeCallback);
+  result |= HAL_DMA_RegisterCallback(&handle_GPDMA1_Channel0, HAL_DMA_XFER_CPLT_CB_ID, audio_retain_completeCallback);
 #endif
 
   s_audio_enabled = 1;
+  return result;
 }
 
 void acq_audio_disable(void) {

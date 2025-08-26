@@ -14,6 +14,7 @@
 #include <sai.h>
 #include <sdmmc.h>
 #include <spi.h>
+#include <tim.h>
 #include <usb_otg.h>
 #include <app_filex.h>
 
@@ -28,11 +29,13 @@
 #include "battery/log_battery.h"
 #include "battery/bms_ctl.h"
 #include "ecg/acq_ecg.h"
+#include "gps/gps.h"
 #include "imu/acq_imu.h"
 #include "led/led_ctl.h"
 #include "mission.h"
 #include "pressure/acq_pressure.h"
 #include "pressure/log_pressure.h"
+#include "satellite/satellite.h"
 #include "timing.h"
 #include "usb/usb.h"
 #include "version.h"
@@ -129,7 +132,6 @@ int main(void) {
 
     MX_I2C1_Init(); // pressure sensor
     
-        
     /* open SD card for system logging */
     MX_SDMMC1_SD_Init();
     MX_FileX_Init();
@@ -140,7 +142,7 @@ int main(void) {
     } else {
         led_error();
     }
-    
+
 #ifdef BMS_ENABLED
     /* basic BMS validation */
     int bms_settings_verified = bms_ctl_verify();
@@ -232,28 +234,81 @@ int main(void) {
 
 #ifdef IMU_ENABLED
     CETI_LOG("Initializing IMU");
-    acq_imu_init();
+    // acq_imu_init();
 #endif // IMU_ENABLED
 
 #ifdef ECG_ENABLED
     CETI_LOG("Initializing ECG");
     MX_I2C2_Init(); // ECG ADC
-    acq_ecg_enable();
+    // acq_ecg_enable();
 #endif // ECG_ENABLED
 
 #ifdef GPS_ENABLED
     CETI_LOG("Initializing GPS");
-    // acq_gps_enable();
+    gps_init();
 #endif // GPS_ENABLED
 
-#ifdef SATELLITE_ENABLDED
+#ifdef SATELLITE_ENABLED
     CETI_LOG("Initializing ARGOS");
+    satellite_init();
 #endif // SATELLITE_ENABLED
 
     CETI_LOG("Enabling Antenna Flasher");
 
     mission_set_state(MISSION_STATE_SURFACE);
 
+/* system verification */
+    // verify i2c bus 1
+        // pressure sensor
+        if (HAL_I2C_IsDeviceReady(&hi2c1, (0x40 << 1), 3, 5) == HAL_OK) {
+            CETI_LOG("Pressure sensor address 0x40 on i2c bus 1");
+        } else {
+            CETI_WARN("Pressure sensor not found on i2c bus 1");
+        }
+        
+        // gps
+        if (HAL_I2C_IsDeviceReady(&hi2c1,  (0x42 << 1), 3, 5) == HAL_OK) {
+            CETI_LOG("Gps sensor address 0x42 on i2c bus 1");
+        } else {
+            CETI_WARN("Pressure sensor not found on i2c bus 1");
+        }
+
+    // verify i2c bus 2
+        // ecg
+        if (HAL_I2C_IsDeviceReady(&hi2c2,  (0x68 << 1), 3, 5) == HAL_OK) {
+            CETI_LOG("ecg adc address 0x68 on i2c bus 2");
+        } else {
+            CETI_WARN("ecg adc not found on i2c bus 2");
+        }
+    // verify i2c bus 3
+        // LED driver
+        if (HAL_I2C_IsDeviceReady(&hi2c3,  (0x30 << 1), 3, 5) == HAL_OK) {
+            CETI_LOG("led driver address 0x30 on i2c bus 3");
+        } else {
+            CETI_WARN("led driver not found on i2c bus 3");
+        }
+
+        // BMS
+        if (HAL_I2C_IsDeviceReady(&hi2c3,  (0x36 << 1), 3, 5) == HAL_OK) {
+            CETI_LOG("bms lower address 0x36 on i2c bus 3");
+        } else {
+            CETI_WARN("bms driver not found on i2c bus 3");
+        }
+
+        
+        // BMS
+        if (HAL_I2C_IsDeviceReady(&hi2c3,  (0x0b << 1), 3, 5) == HAL_OK) {
+            CETI_LOG("bms lower address 0x0b on i2c bus 3");
+        } else {
+            CETI_WARN("bms driver not found on i2c bus 3");
+        }
+
+        // UART Arribada
+        // ToDo: ping arribada and expect response
+
+        // UART GPS
+
+        // SPI IMU
 
 /* BEGIN ACQUISITION */
 #ifdef BMS_ENABLED
@@ -264,12 +319,16 @@ int main(void) {
     acq_pressure_start();
 #endif
 
+#ifdef GPS_ENABLE
+    gps_start();
+#endif
+
 #ifdef IMU_ENABLED
-    acq_imu_start();
+    // acq_imu_start();
 #endif //IMU_ENABLED
 
 #ifdef ECG_ENABLED
-    acq_ecg_start();
+    // acq_ecg_start();
 #endif
 
 #ifdef AUDIO_ENABLED
@@ -293,12 +352,14 @@ int main(void) {
 void tud_mount_cb(void)
 {
 //  blink_interval_ms = BLINK_MOUNTED;
+	led_blink(LED_YELLOW);
 	CETI_LOG("USB mounted");
 }
 
 // Invoked when device is unmounted
 void tud_umount_cb(void)
 {
+	led_on(LED_YELLOW);
 	CETI_LOG("USB unmounted");
 //  blink_interval_ms = BLINK_NOT_MOUNTED;
 }

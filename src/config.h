@@ -5,11 +5,11 @@
 /* AUDIO CONFIG */
 #define AUDIO_ENABLED
 #define BMS_ENABLED
-//  #define ECG_ENABLED
+// #define ECG_ENABLED
 // #define IMU_ENABLED
 // #define GPS_ENABLED
-//#define PRESSURE_ENABLED
-// #define SATELLITE_ENABLED
+#define PRESSURE_ENABLED
+//#define SATELLITE_ENABLED
 // #define USB_ENABLED
 
 
@@ -17,6 +17,7 @@
 #warning "Audio is currently disabled"
 #endif
 #define AUDIO_SAMPLE_BITDEPTH (24)
+// #define AUDIO_SAMPLE_BITDEPTH (16)
 #define AUDIO_SAMPLERATE_SPS  (96000)
 #define AUDIO_CH_0_EN         (1)
 #define AUDIO_CH_1_EN         (1)
@@ -30,7 +31,7 @@
 
 #define AUDIO_FILTER_SINC     0
 #define AUDIO_FILTER_WIDEBAND 1
-#define AUDIO_FILTER AUDIO_FILTER_SINC
+#define AUDIO_FILTER_TYPE AUDIO_FILTER_WIDEBAND
 
 /* BMS CONFIG */
 #ifndef BMS_ENABLED

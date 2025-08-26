@@ -348,6 +348,8 @@ const sh2_Quaternion_t s_imu_reorientation_quat = {
 void acq_imu_init(void) {
     sh2_ProductIds_t pid;
     acq_imu_disable_interrupts();
+	__HAL_RCC_SPI3_CLK_ENABLE();
+	MX_SPI1_Init();
 
     int status = sh2_open(&bno08x, NULL, NULL);
     if (status != SH2_OK) {

@@ -121,8 +121,8 @@ void Error_Handler(void);
 #define IFACE_EN_GPIO_Input_GPIO_Port GPIOD
 #define FLASHER_LED_EN_GPIO_Output_Pin GPIO_PIN_7
 #define FLASHER_LED_EN_GPIO_Output_GPIO_Port GPIOC
-#define ADC_CLOCK_Pin GPIO_PIN_8
-#define ADC_CLOCK_GPIO_Port GPIOA
+#define AUDIO_CLK_Pin GPIO_PIN_8
+#define AUDIO_CLK_GPIO_Port GPIOA
 #define GPS_USART1_RX_Pin GPIO_PIN_10
 #define GPS_USART1_RX_GPIO_Port GPIOA
 #define OPTICAL_SPI2_SCK_Pin GPIO_PIN_3

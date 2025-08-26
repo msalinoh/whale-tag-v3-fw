@@ -4,3 +4,6 @@
 [submodule "lib/sh2"]
 	path = lib/sh2
 	url = https://github.com/ceva-dsp/sh2.git
+[submodule "lib/minmea"]
+	path = lib/minmea
+	url = https://github.com/kosma/minmea.git

@@ -9,6 +9,7 @@
 
 #include "audio/log_audio.h"
 #include "battery/log_battery.h"
+#include "gps/gps.h"
 #include "imu/acq_imu.h"
 #include "pressure/log_pressure.h"
 #include "main.h"
@@ -35,7 +36,7 @@ MissionTask mission_surface_tasks[] = {
 	// log_ecg_task,
 #endif
 #ifdef GPS_ENABLED
-	// log_gps_task,
+	gps_task,
 #endif
 	// log_syslog_task,
 };
